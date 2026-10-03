@@ -1,0 +1,52 @@
+.approval-inbox { display:grid; gap:20px; width:100%; color:#29475f; }
+.approval-inbox-hero { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:27px 32px; border:1px solid #d5e3ed; border-radius:16px; background:radial-gradient(circle at 90% 4%,#e7e4ff 0,transparent 29%),radial-gradient(circle at 70% 105%,#d9f3e9 0,transparent 31%),linear-gradient(115deg,#f6f9ff,#f4fbf8); box-shadow:0 10px 28px #294d690d; }
+.approval-inbox-eyebrow { display:inline-flex; margin:0 0 9px; padding:6px 10px; border:1px solid #d6e3f1; border-radius:99px; color:#4d78a2; background:#edf4ff; font-size:11px; font-weight:850; letter-spacing:.1em; }
+.approval-inbox-hero h1 { margin:0; color:#203f59; font-size:clamp(30px,2.5vw,40px); letter-spacing:-.04em; }
+.approval-inbox-hero p:last-child { margin:8px 0 0; color:#6e8495; font-size:15px; }
+.approval-inbox-mark { display:grid; width:64px; height:64px; flex:none; place-items:center; border:1px solid #c9d8ef; border-radius:20px; color:#fff; background:linear-gradient(145deg,#657ed0,#5186ba 58%,#379d84); box-shadow:0 10px 24px #527eb933; }
+.approval-inbox-mark svg { width:31px; height:31px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.approval-inbox-register { overflow:hidden; border:1px solid #d8e4eb; border-radius:15px; background:#fff; box-shadow:0 12px 32px #244a620d; }
+.approval-inbox-toolbar { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:17px 20px; border-bottom:1px solid #e4edf2; background:linear-gradient(100deg,#f4f8ff,#f2faf7 68%,#fbf7ff); }
+.approval-inbox-summary { display:flex; align-items:center; gap:12px; }
+.approval-inbox-count { display:grid; width:42px; height:42px; place-items:center; border:1px solid #d4e4f3; border-radius:13px; color:#426f9d; background:#eaf3ff; font-size:18px; font-weight:800; }
+.approval-inbox-summary > span:last-child { display:grid; gap:3px; }
+.approval-inbox-summary strong { color:#34546c; font-size:15px; }
+.approval-inbox-summary small { color:#8194a2; font-size:12px; }
+.approval-inbox-filters { display:flex; align-items:end; gap:12px; }
+.approval-inbox-filters label { display:grid; gap:5px; color:#617b8f; font-size:11px; font-weight:750; }
+.approval-inbox-filters select,.approval-inbox-filters input { min-width:190px; height:40px; padding:0 11px; border:1px solid #d4e1e9; border-radius:8px; outline:none; color:#35556c; background:white; font:inherit; font-size:13px; }
+.approval-inbox-filters select:focus,.approval-inbox-filters input:focus { border-color:#5794ae; box-shadow:0 0 0 3px #4288a51f; }
+.approval-inbox-search input { width:275px; }
+.approval-inbox-table-wrap { overflow-x:auto; }
+.approval-inbox-table { width:100%; min-width:1120px; border-collapse:collapse; font-size:13px; }
+.approval-inbox-table thead { background:linear-gradient(90deg,#eef4ff,#edf8f5 58%,#f7f1fb); }
+.approval-inbox-table th { height:48px; padding:0 13px; border-bottom:1px solid #dfe8ee; color:#526e83; font-size:11px; font-weight:850; letter-spacing:.055em; text-align:left; text-transform:uppercase; white-space:nowrap; }
+.approval-inbox-table td { height:65px; padding:10px 13px; border-bottom:1px solid #edf1f4; color:#4d687d; white-space:nowrap; }
+.approval-inbox-table tbody tr { cursor:pointer; transition:background-color .14s ease; }
+.approval-inbox-table tbody tr:nth-child(even) { background:#fafcfd; }
+.approval-inbox-table tbody tr:hover,.approval-inbox-table tbody tr:focus { outline:none; background:#f0f7fb; }
+.approval-inbox-number { padding:0; border:0; color:#3d73a2; background:none; cursor:pointer; font:inherit; font-weight:850; }
+.approval-inbox-number:hover { text-decoration:underline; }
+.approval-inbox-type { display:inline-flex; padding:6px 9px; border-radius:99px; font-size:11px; font-weight:750; }
+.approval-inbox-type-change { color:#745a98; background:#f2ecfa; }
+.approval-inbox-type-service_request { color:#327b68; background:#e8f6ef; }
+.approval-inbox-subject { min-width:200px; max-width:310px; }
+.approval-inbox-subject strong,.approval-inbox-subject small { display:block; overflow:hidden; text-overflow:ellipsis; }
+.approval-inbox-subject strong { color:#35556d; font-size:13px; }
+.approval-inbox-subject small,.approval-inbox-secondary { margin-top:4px; color:#8497a5; font-size:11px; }
+.approval-inbox-secondary { display:block; }
+.approval-inbox-group { display:inline-flex; padding:6px 9px; border:1px solid #d8e4ee; border-radius:7px; color:#4a6d89; background:#f7faff; font-size:11px; font-weight:700; }
+.approval-inbox-priority { display:inline-flex; min-width:35px; justify-content:center; padding:5px 7px; border-radius:6px; color:#4d75a5; background:#eff5ff; font-size:11px; font-weight:800; }
+.approval-inbox-priority-p1 { color:#ac4e44; background:#fff0ed; }.approval-inbox-priority-p2 { color:#9c712b; background:#fff6e5; }.approval-inbox-priority-p4 { color:#3d7d64; background:#eff9f3; }
+.approval-inbox-date { color:#72899a!important; font-size:12px; }
+.approval-inbox-open { padding:8px 11px; border:1px solid #cbddeb; border-radius:8px; color:#3f7199; background:white; cursor:pointer; font:inherit; font-size:12px; font-weight:750; }
+.approval-inbox-open:hover { border-color:#91b5cf; background:#f2f8fc; }
+.approval-inbox-open span { margin-left:5px; }
+.approval-inbox-message,.approval-inbox-empty { display:grid; min-height:190px; place-content:center; justify-items:center; gap:10px; color:#728899; font-size:14px; }
+.approval-inbox-error { color:#a14e45; }
+.approval-inbox-empty > span { display:grid; width:46px; height:46px; place-items:center; border-radius:16px; color:#368468; background:#e9f7ef; font-size:24px; }
+.approval-inbox-empty strong { color:#3b5e73; font-size:16px; }.approval-inbox-empty p { margin:0; font-size:13px; }
+.approval-inbox-spinner { width:23px; height:23px; border:3px solid #dfeaf0; border-top-color:#438e91; border-radius:50%; animation:approval-spin .75s linear infinite; }
+@keyframes approval-spin { to { transform:rotate(360deg); } }
+.approval-inbox-footer { display:flex; justify-content:space-between; gap:12px; padding:12px 18px; border-top:1px solid #e7edf1; color:#8495a1; background:#fafcfd; font-size:11px; }
+@media (max-width:760px) { .approval-inbox-hero { padding:20px; }.approval-inbox-toolbar { align-items:stretch; flex-direction:column; }.approval-inbox-filters { align-items:stretch; flex-direction:column; }.approval-inbox-filters select,.approval-inbox-search input { width:100%; min-width:0; }.approval-inbox-footer { flex-direction:column; } }

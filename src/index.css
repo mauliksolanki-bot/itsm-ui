@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  font-display: swap;
+  color: #17364b;
+  background: #fbfcfd;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  color-scheme: light;
+
+  --font-body: 'DM Sans', sans-serif;
+  --font-display: 'Manrope', 'DM Sans', sans-serif;
+  --brand-700: #176b87;
+  --brand-800: #14576e;
+  --brand-900: #123b53;
+  --teal-500: #198392;
+  --teal-300: #8ce0d2;
+  --accent-blue: #487ce8;
+  --accent-mint: #28a891;
+  --accent-amber: #e1a843;
+  --accent-coral: #e17b68;
+  --ink-900: #17364b;
+  --ink-800: #2b4456;
+  --ink-600: #637788;
+  --ink-400: #8495a2;
+  --line: #e5ecef;
+  --surface: #fff;
+  --surface-soft: #f7fafb;
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; min-height: 100%; }
+body { min-width: 320px; min-height: 100vh; margin: 0; font-family: var(--font-body); font-size: 16px; }
+button, input { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+::selection { color: #fff; background: #187c8e; }
+
+/* Shared application theme for editable form controls across all pages. */
+#root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
+#root select,
+#root textarea {
+  border: 1px solid #c8d8e2;
+  border-radius: 8px;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+#root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):hover:not(:disabled):not(:focus),
+#root select:hover:not(:disabled):not(:focus),
+#root textarea:hover:not(:disabled):not(:focus) {
+  border-color: #a7bfcd;
+}
+#root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):focus,
+#root select:focus,
+#root textarea:focus {
+  border-color: #318694;
+  outline: 0;
+  box-shadow: 0 0 0 3px #19839220;
+}
