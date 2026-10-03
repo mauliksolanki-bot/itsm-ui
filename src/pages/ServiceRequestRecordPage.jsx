@@ -43,7 +43,7 @@ function stageFor(status) {
   return 'Completed'
 }
 
-function ServiceRequestRecordPage({ requestId, user }) {
+function ServiceRequestRecordPage({ requestId, user, basePath = '/service-catalog/service-request' }) {
   const navigate = useNavigate()
   const roles = user?.roles || []
   const isStaff = roles.some((role) => STAFF_ROLES.includes(role))
@@ -278,22 +278,24 @@ function ServiceRequestRecordPage({ requestId, user }) {
   }
 
   if (loading) return <section className="sr-record-shell"><Loader variant="inline" title="Loading requested item" subtitle="Getting the latest request details." /></section>
-  if (error && !record) return <section className="sr-record-shell"><div className="sr-record-toolbar"><button type="button" onClick={() => navigate('/service-catalog/service-request')}>‹ Back to requests</button></div><p className="sr-record-error" role="alert">{error}</p></section>
+  if (error && !record) return <section className="sr-record-shell"><div className="sr-record-toolbar"><button type="button" onClick={() => navigate(basePath)}>‹ Back to requests</button></div><p className="sr-record-error" role="alert">{error}</p></section>
   if (!record || !draft) return null
 
-  const field = (label, value, editable = false, control = null) => <label className={`sr-record-field${editable ? ' sr-field-editable' : ' sr-field-readonly'}`} key={label}><span>{label}</span>{control || <input disabled value={value || '—'} title={value || '—'} />}</label>
+  const field = (label, value, editable = false, control = null) => <label className={`sr-record-field request-field${editable ? ' sr-field-editable' : ' sr-field-readonly'}`} key={label}><span>{label}</span>{control || <input disabled value={value || '—'} title={value || '—'} />}</label>
   const statusChoices = nextStatuses.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)
 
-  return <section className="sr-record-shell" aria-labelledby="sr-record-title">
-    <header className="sr-record-toolbar">
-      <div className="sr-record-heading"><button type="button" className="sr-back-button" onClick={() => navigate('/service-catalog/service-request')} aria-label="Back to requests">‹</button><span className="sr-record-menu" aria-hidden="true">☰</span><div><strong id="sr-record-title">Requested Item</strong><small>{record.requestNumber}</small></div></div>
-      <div className="sr-toolbar-actions"><span className={`sr-state-pill sr-state-${record.status.toLowerCase()}`}>{STATUS_LABELS[record.status] || record.status}</span><button type="button" onClick={save} disabled={saving || (!dirty && !comment.trim() && !workNote.trim())}>{saving ? 'Saving…' : 'Update'}</button></div>
+  return <section className="sr-record-shell service-request-page service-request-record-page" aria-labelledby="sr-record-title">
+    <header className="change-form-heading service-request-form-heading sr-service-record-heading">
+      <div className="change-form-heading-copy"><button type="button" className="sr-back-button" onClick={() => navigate(basePath)} aria-label="Back to requests">‹</button><span className="change-form-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10a2 2 0 0 1 2 2v14H5V6a2 2 0 0 1 2-2Z"/><path d="M9 4V2h6v2M8 9h8M8 13h8M8 17h5"/></svg></span><div><h2 id="sr-record-title">{record.requestNumber} - {record.shortDescription || 'Service Request'}</h2></div></div>
+      <div className="change-form-heading-meta sr-toolbar-actions application-onboarding-toolbar-actions"><span className={`sr-state-pill sr-state-${record.status.toLowerCase()}`}>{STATUS_LABELS[record.status] || record.status}</span><button className="sr-service-request-update" type="button" onClick={save} disabled={saving || (!dirty && !comment.trim() && !workNote.trim())}>{saving ? 'Saving…' : 'Update'}</button></div>
     </header>
 
     {error && <p className="sr-record-error" role="alert">{error}</p>}
-    <form className="sr-record-form" onSubmit={save}>
-      <div className="sr-record-columns">
-        <div className="sr-record-column">
+    <form className="sr-record-form request-record-form" onSubmit={save}>
+      <section className="request-ci-section">
+      <header className="request-ci-section-heading"><span className="request-ci-section-marker" aria-hidden="true"/><div><h2>Request Information</h2><p>Service, requester, assignment, and status details.</p></div></header>
+      <div className="sr-record-columns request-record-columns">
+        <div className="sr-record-column request-record-column">
           {field('Number', record.requestNumber)}
           {field('Service', record.service)}
           {field('Category', record.category, canEditRequester, canEditRequester ? <select value={draft.categoryName} disabled={categoriesLoading} onChange={(event) => selectCategory(event.target.value)}><option value="">{categoriesLoading ? 'Loading categories…' : 'Choose category'}</option>{categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select> : null)}
@@ -304,7 +306,7 @@ function ServiceRequestRecordPage({ requestId, user }) {
           {field('Catalog item', record.itemDescription || record.itemName)}
           {field('Parent', '—')}
         </div>
-        <div className="sr-record-column">
+        <div className="sr-record-column request-record-column">
           {field('Opened', formatDate(record.createdAt))}
           {field('Opened by', `${record.requestedBy} (${record.requestedByUsername})`)}
           {field('Stage', stageFor(record.status))}
@@ -317,14 +319,16 @@ function ServiceRequestRecordPage({ requestId, user }) {
           {record.approvalStatus === 'PENDING' && field('Pending approval for', record.pendingApprover || 'IT approval queue')}
           {field('Priority', record.priority)}
         </div>
-      </div>
+      </div></section>
 
+      <section className="request-ci-section"><header className="request-ci-section-heading"><span className="request-ci-section-marker" aria-hidden="true"/><div><h2>Request Details</h2><p>Summary and information needed to fulfill this request.</p></div></header><div className="request-ci-details-grid">
       {field('Short description', draft.shortDescription, canEditUserFields, canEditUserFields ? <input maxLength={160} value={draft.shortDescription} onChange={(event) => change('shortDescription', event.target.value)} /> : null)}
       {field('Description', draft.description, canEditUserFields, canEditUserFields ? <textarea rows={4} value={draft.description} onChange={(event) => change('description', event.target.value)} /> : <textarea rows={4} disabled value={plainText(record.description)} />)}
+      </div></section>
 
-      <section className="sr-variables-section">
-        <header><span className="sr-section-mark">▤</span><div><h2>Variables</h2><p>Request details and requester information</p></div></header>
-        <div className="sr-variables-grid">
+      <section className="sr-variables-section request-ci-section request-notes-section">
+        <header className="request-ci-section-heading"><span className="request-ci-section-marker" aria-hidden="true"/><div><h2>Request Variables</h2><p>Requester information and catalog item details.</p></div></header>
+        <div className="sr-variables-grid request-fields-grid">
           <div className="sr-variable-group-title">Requester Details</div>
           <div className="sr-variable-row"><span>Requested By</span><input disabled value={record.requestedBy} /></div>
           <div className="sr-variable-row"><span>Requested For</span><input disabled value={record.requestedFor} /></div>

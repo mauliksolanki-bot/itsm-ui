@@ -2,13 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import './CmdbDashboardPage.css'
 
-const PERIODS = [
-  { value: '30', label: 'Last 30 days' },
-  { value: '90', label: 'Last 90 days' },
-  { value: '365', label: 'Last 12 months' },
-  { value: 'all', label: 'All records' },
-]
-
 async function responseBody(response) {
   const body = await response.json().catch(() => null)
   if (!response.ok) throw new Error(body?.message || 'Unable to load CMDB records.')
@@ -34,7 +27,7 @@ function recordDate(record) { return record.createdAt ? new Date(record.createdA
 function isOperational(record) { return record.status?.toLowerCase() === 'operational' }
 function ciLink(filters = {}) {
   const query = new URLSearchParams(Object.entries(filters).filter(([, value]) => value))
-  return `/application-server/app-servers${query.size ? `?${query}` : ''}`
+  return `/cmdb/cidata${query.size ? `?${query}` : ''}`
 }
 
 function MetricCard({ label, value, detail, tone, to }) {
@@ -61,8 +54,6 @@ export default function CmdbDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
-  const [period, setPeriod] = useState('all')
-  const [filters, setFilters] = useState({ ciClass: '', environment: '', status: '', service: '', owner: '' })
   const [lastRefreshed, setLastRefreshed] = useState(null)
 
   const loadRecords = useCallback(async (quiet = false) => {
@@ -79,16 +70,7 @@ export default function CmdbDashboardPage() {
 
   useEffect(() => { loadRecords(); }, [loadRecords])
 
-  const services = useMemo(() => [...new Set(records.filter((record) => ['Business Service', 'Application Service'].includes(record.applicationCategory)).map((record) => record.applicationName))].sort(), [records])
-  const owners = useMemo(() => [...new Map(records.filter((record) => record.applicationOwner).map((record) => [record.applicationOwner.userId, record.applicationOwner.displayName])).entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)), [records])
-  const filteredRecords = useMemo(() => {
-    const cutoff = period === 'all' ? null : Date.now() - Number(period) * 86400000
-    return records.filter((record) => {
-      const inPeriod = cutoff === null || (recordDate(record)?.getTime() ?? 0) >= cutoff
-      const matchService = !filters.service || relationServices(record, records).includes(filters.service) || record.applicationName === filters.service
-      return inPeriod && (!filters.ciClass || record.applicationCategory === filters.ciClass) && (!filters.environment || record.environment === filters.environment) && (!filters.status || record.status === filters.status) && matchService && (!filters.owner || String(record.applicationOwner?.userId || '') === filters.owner)
-    })
-  }, [records, period, filters])
+  const filteredRecords = records
 
   const total = filteredRecords.length
   const active = filteredRecords.filter(isOperational).length
@@ -122,10 +104,7 @@ export default function CmdbDashboardPage() {
 
   const recentRecords = useMemo(() => [...filteredRecords].sort((a, b) => (recordDate(b)?.getTime() ?? 0) - (recordDate(a)?.getTime() ?? 0)).slice(0, 6), [filteredRecords])
 
-  function updateFilter(key, value) { setFilters((current) => ({ ...current, [key]: value })) }
-  function clearFilters() { setFilters({ ciClass: '', environment: '', status: '', service: '', owner: '' }); setPeriod('all') }
-  const currentListFilters = { class: filters.ciClass, environment: filters.environment, status: filters.status, service: filters.service, owner: filters.owner, days: period === 'all' ? '' : period }
-  function viewCis(selection = {}) { return ciLink({ ...currentListFilters, ...selection }) }
+  function viewCis(selection = {}) { return ciLink(selection) }
   function exportCsv() {
     const columns = ['CI ID', 'CI name', 'CI class', 'CI type', 'Environment', 'Status', 'Criticality', 'Owner']
     const rows = filteredRecords.map((record) => [record.applicationNumber, record.applicationName, record.applicationCategory, record.applicationType, record.environment, record.status, record.businessCriticality, record.applicationOwner?.displayName || ''])
@@ -140,34 +119,22 @@ export default function CmdbDashboardPage() {
       <div className="cmdb-header-actions"><span className="cmdb-refreshed">{lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Live CMDB data'}</span><button type="button" onClick={() => loadRecords(true)} disabled={refreshing} aria-label="Refresh dashboard">{refreshing ? 'Refreshing…' : '↻ Refresh'}</button><button type="button" onClick={exportCsv} disabled={!filteredRecords.length}>↓ Export</button></div>
     </header>
 
-    <section className="cmdb-filter-panel" aria-label="Dashboard filters">
-      <div className="cmdb-filter-title"><div><strong>Dashboard filters</strong><span>Refine the CMDB metrics and charts</span></div><button type="button" onClick={clearFilters}>Reset</button></div>
-      <div className="cmdb-filter-grid">
-        <label>Time period<select value={period} onChange={(event) => setPeriod(event.target.value)}>{PERIODS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-        <label>CI class<select value={filters.ciClass} onChange={(event) => updateFilter('ciClass', event.target.value)}><option value="">All classes</option>{[...new Set(records.map((record) => record.applicationCategory).filter(Boolean))].sort().map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label>Environment<select value={filters.environment} onChange={(event) => updateFilter('environment', event.target.value)}><option value="">All environments</option>{[...new Set(records.map((record) => record.environment).filter(Boolean))].sort().map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label>Status<select value={filters.status} onChange={(event) => updateFilter('status', event.target.value)}><option value="">All statuses</option>{[...new Set(records.map((record) => record.status).filter(Boolean))].sort().map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label>Business service<select value={filters.service} onChange={(event) => updateFilter('service', event.target.value)}><option value="">All services</option>{services.map((item) => <option key={item}>{item}</option>)}</select></label>
-        <label>Owner<select value={filters.owner} onChange={(event) => updateFilter('owner', event.target.value)}><option value="">All owners</option>{owners.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-      </div>
-    </section>
-
     {error && <div className="cmdb-error" role="alert"><span>{error}</span><button type="button" onClick={() => loadRecords()}>Retry</button></div>}
     {loading && !records.length ? <div className="cmdb-loading" role="status"><span className="cmdb-spinner" />Loading CMDB dashboard…</div> : <>
       <section className="cmdb-metrics" aria-label="Configuration item summary">
         <MetricCard label="Total CIs" value={total.toLocaleString()} detail="Configuration items" tone="blue" to={viewCis()} />
-        <MetricCard label="Operational CIs" value={active.toLocaleString()} detail={`${total ? Math.round(active / total * 100) : 0}% of current view`} tone="green" to={viewCis({ status: 'Operational' })} />
+        <MetricCard label="Operational CIs" value={active.toLocaleString()} detail={`${total ? Math.round(active / total * 100) : 0}% of all CIs`} tone="green" to={viewCis({ status: 'Operational' })} />
         <MetricCard label="Other statuses" value={inactive.toLocaleString()} detail="Needs review or lifecycle action" tone="amber" to={viewCis({ status: 'non-operational' })} />
         <MetricCard label="Critical CIs" value={critical.toLocaleString()} detail="Marked critical" tone="rose" to={viewCis({ criticality: 'Critical' })} />
         <Link className="cmdb-metric cmdb-metric-health" to={viewCis({ quality: 'incomplete' })}><span className="cmdb-metric-label">Record completeness</span><strong>{completeness}%</strong><span className="cmdb-metric-detail">Owner, group, and description present<span aria-hidden="true">↗</span></span><span className="cmdb-health-track"><i style={{ width: `${completeness}%` }} /></span></Link>
       </section>
 
       <div className="cmdb-analytics-grid">
-        <BarList title="CIs by class" description="Configuration item distribution" items={byClass} toFilter={(item) => viewCis({ class: item.label })} emptyText="No CI class data for these filters." />
-        <BarList title="CIs by environment" description="Where your estate is deployed" items={byEnvironment} toFilter={(item) => viewCis({ environment: item.label })} emptyText="No environment data for these filters." />
-        <BarList title="CIs by business service" description="Items linked to business services" items={byService} toFilter={(item) => item.label === 'No linked business service' ? viewCis({ quality: 'relationships-empty' }) : viewCis({ service: item.label })} emptyText="No business service data for these filters." />
+        <BarList title="CIs by class" description="Configuration item distribution" items={byClass} toFilter={(item) => viewCis({ class: item.label })} emptyText="No CI class data available." />
+        <BarList title="CIs by environment" description="Where your estate is deployed" items={byEnvironment} toFilter={(item) => viewCis({ environment: item.label })} emptyText="No environment data available." />
+        <BarList title="CIs by business service" description="Items linked to business services" items={byService} toFilter={(item) => item.label === 'No linked business service' ? viewCis({ quality: 'relationships-empty' }) : viewCis({ service: item.label })} emptyText="No business service data available." />
         <section className="cmdb-panel cmdb-health-panel">
-          <header className="cmdb-panel-heading"><div><h2>CMDB health</h2><p>Data quality checks for this view</p></div><span className="cmdb-health-score">{healthItems.reduce((sum, item) => sum + item.count, 0)} <small>findings</small></span></header>
+          <header className="cmdb-panel-heading"><div><h2>CMDB health</h2><p>Data quality checks for your estate</p></div><span className="cmdb-health-score">{healthItems.reduce((sum, item) => sum + item.count, 0)} <small>findings</small></span></header>
           <div className="cmdb-health-list">{healthItems.map((item) => <Link to={viewCis({ quality: item.quality })} className="cmdb-health-row" key={item.quality}><span className="cmdb-health-indicator" aria-hidden="true">!</span><span>{item.label}</span><strong>{item.count}</strong><span className="cmdb-health-arrow" aria-hidden="true">→</span></Link>)}</div>
           <div className="cmdb-completeness-note"><span className="cmdb-completeness-dot" /> Completeness is based on required ownership and description fields.</div>
         </section>
@@ -176,7 +143,7 @@ export default function CmdbDashboardPage() {
       <section className="cmdb-panel cmdb-recent-panel">
         <header className="cmdb-panel-heading"><div><h2>Recently added CIs</h2><p>Latest configuration items registered in the CMDB</p></div><Link to={viewCis()}>View all <span aria-hidden="true">→</span></Link></header>
         <div className="cmdb-recent-table-wrap"><table className="cmdb-recent-table"><thead><tr><th>CI name</th><th>CI class</th><th>Environment</th><th>Status</th><th>Owner</th><th>Created</th></tr></thead><tbody>
-          {recentRecords.length ? recentRecords.map((record) => <tr key={record.onboardingId} onClick={() => navigate(`/application-server/on-boarding?edit=${record.onboardingId}`)}><td><span className="cmdb-recent-id">{record.applicationNumber}</span><strong>{record.applicationName}</strong></td><td>{record.applicationCategory || '—'}</td><td>{record.environment || '—'}</td><td><span className={`cmdb-status-pill cmdb-status-${(record.status || '').toLowerCase().replaceAll(' ', '-')}`}>{record.status || '—'}</span></td><td>{record.applicationOwner?.displayName || '—'}</td><td>{recordDate(record)?.toLocaleDateString() || '—'}</td></tr>) : <tr><td colSpan="6" className="cmdb-table-empty">{error ? 'CMDB records are unavailable.' : 'No configuration items match these filters.'}</td></tr>}
+          {recentRecords.length ? recentRecords.map((record) => <tr key={record.onboardingId} onClick={() => navigate(`/cmdb/newci?edit=${record.onboardingId}`)}><td><span className="cmdb-recent-id">{record.applicationNumber}</span><strong>{record.applicationName}</strong></td><td>{record.applicationCategory || '—'}</td><td>{record.environment || '—'}</td><td><span className={`cmdb-status-pill cmdb-status-${(record.status || '').toLowerCase().replaceAll(' ', '-')}`}>{record.status || '—'}</span></td><td>{record.applicationOwner?.displayName || '—'}</td><td>{recordDate(record)?.toLocaleDateString() || '—'}</td></tr>) : <tr><td colSpan="6" className="cmdb-table-empty">{error ? 'CMDB records are unavailable.' : 'No configuration items available.'}</td></tr>}
         </tbody></table></div>
       </section>
     </>}

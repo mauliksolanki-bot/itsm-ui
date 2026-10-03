@@ -79,3 +79,46 @@
 .sr-activity-section h2{color:#287c70}
 .sr-activity-item{border-color:#d7e7e5;border-left:3px solid #5daf9e;box-shadow:0 2px 6px #2b756b0a}
 .sr-record-footer{border-top-color:#d8e5ec;background:linear-gradient(100deg,#f0f6fb,#f1faf7)}
+
+/* Existing service requests opened from My Tickets reuse the Create Service Request layout. */
+.service-request-record-page .sr-record-toolbar{min-height:56px;padding:8px 12px;border-color:#d8e4eb;border-radius:10px;background:linear-gradient(110deg,#f7fbfd 0%,#f1f8f8 100%);box-shadow:0 4px 12px #19384b0a}
+.service-request-record-page .sr-record-heading{gap:10px}
+.service-request-record-page .sr-record-heading strong{color:#2b4c64;font-size:14px;font-weight:750}
+.service-request-record-page .sr-record-heading small{display:block;max-width:min(52vw,680px);overflow:hidden;color:#7b909e;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.service-request-record-page .sr-back-button{width:31px;height:31px;flex:none;border:1px solid #d4e4eb;border-radius:8px;color:#357b94;background:#fff;font-size:21px}
+.service-request-record-page .sr-toolbar-actions{gap:8px}
+.service-request-record-page .sr-toolbar-actions>button{min-width:84px;min-height:36px;padding:7px 15px;border:1px solid #237fa7;border-radius:8px;color:#fff;background:linear-gradient(105deg,#286fae 0%,#247fa5 54%,#16897f 100%);box-shadow:0 4px 10px #286fae20;font-size:12px}
+.service-request-record-page .sr-toolbar-actions>button:disabled{opacity:.62}
+.service-request-record-page .sr-record-form{display:grid;gap:12px;overflow:visible;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.service-request-record-page .request-ci-section{min-width:0;padding:18px 19px 20px;border:1px solid #dce7ed;border-radius:11px;background:#fff;box-shadow:0 5px 18px #1c43510a}
+.service-request-record-page .request-ci-section-heading{display:flex;align-items:flex-start;gap:11px;margin:0 0 15px;padding:0 0 12px;border-bottom:1px solid #e8eef2}
+.service-request-record-page .request-ci-section-marker{width:4px;height:26px;flex:none;border-radius:5px;background:linear-gradient(180deg,#3282bb,#269889)}
+.service-request-record-page .request-ci-section-heading h2{margin:0;color:#24445a;font-size:15px;font-weight:750;letter-spacing:-.01em}
+.service-request-record-page .request-ci-section-heading p{margin:4px 0 0;color:#7b909e;font-size:11px;line-height:1.5}
+.service-request-record-page .request-record-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 24px;padding:0;border:0;background:transparent}
+.service-request-record-page .request-record-column{gap:14px}
+.service-request-record-page .request-record-column .request-field,.service-request-record-page .request-field{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:0;margin:0;color:#344d5b;font-size:12px;font-weight:550}
+.service-request-record-page .request-record-column .request-field>span,.service-request-record-page .request-field>span{justify-content:flex-start;padding:0;color:#3c5361;text-align:left;font-size:12px;font-weight:650}
+.service-request-record-page .request-record-column .request-field input,.service-request-record-page .request-record-column .request-field select,.service-request-record-page .request-field input,.service-request-record-page .request-field select,.service-request-record-page .request-field textarea,.service-request-record-page .sr-variable-row input,.service-request-record-page .sr-variable-row select{box-sizing:border-box;width:100%;min-width:0;min-height:38px;height:auto;padding:8px 11px;border:1px solid #cadbe6;border-radius:8px;outline:0;color:#2b4557;background:#fff;font-size:12px;font-weight:450;box-shadow:none}
+.service-request-record-page .request-record-column .request-auto-value{min-height:38px;padding:8px 11px;border:1px solid #d9e5ef;border-radius:8px;color:#617b8e;background:#f4f7f9;font-size:12px;font-weight:500}
+.service-request-record-page .request-record-column .request-field input:focus,.service-request-record-page .request-record-column .request-field select:focus,.service-request-record-page .request-field input:focus,.service-request-record-page .request-field select:focus,.service-request-record-page .request-field textarea:focus{border-color:#468db0;background:#fff;box-shadow:0 0 0 3px #468db018}
+.service-request-record-page .request-ci-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 24px}
+.service-request-record-page .request-ci-details-grid>.request-field{grid-column:1/-1}
+.service-request-record-page .request-ci-details-grid>.request-field textarea{min-height:110px;resize:vertical;line-height:1.5}
+.service-request-record-page .sr-variables-section{display:grid;gap:14px;margin:0;border:1px solid #dce7ed;border-radius:11px;background:#fff}
+.service-request-record-page .sr-variables-section>header{display:flex;align-items:flex-start;gap:11px;margin:0;padding:0 0 12px;border-bottom:1px solid #e8eef2;background:transparent}
+.service-request-record-page .sr-variables-section>header h2{color:#24445a;font-size:15px}
+.service-request-record-page .sr-variables-section>header p{margin:4px 0 0;color:#7b909e;font-size:11px}
+.service-request-record-page .sr-variables-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;padding:0;background:transparent}
+.service-request-record-page .sr-variable-group-title{grid-column:1/-1;padding:8px 10px;border:1px solid #e1eaf0;border-left:3px solid #4b94aa;border-radius:7px;color:#3c5361;background:#f7fafb;font-size:11px}
+.service-request-record-page .sr-variable-row{grid-template-columns:minmax(110px,30%) minmax(0,1fr);gap:8px}
+.service-request-record-page .sr-variable-row>span{color:#3c5361;font-size:11px;font-weight:600}
+.service-request-record-page .sr-variable-row input:disabled{color:#617b8e;background:#f4f7f9;cursor:default}
+.service-request-record-page .sr-no-variables{color:#8093a0}
+.service-request-record-page .sr-activity-section,.service-request-record-page .sr-attachments,.service-request-record-page .sr-approval-panel{padding:18px 19px 20px;border:1px solid #dce7ed;border-radius:11px;background:#fff}
+.service-request-record-page .sr-activity-section{gap:14px}
+.service-request-record-page .sr-activity-section h2,.service-request-record-page .sr-attachments h2{color:#24445a;font-size:15px}
+.service-request-record-page .sr-activity-item{border-radius:8px}
+.service-request-record-page .sr-record-footer{padding:13px 18px;border:1px solid #dce7ed;border-radius:9px;background:#f8fbfd}
+@media(max-width:850px){.service-request-record-page .request-ci-section,.service-request-record-page .sr-variables-section,.service-request-record-page .sr-activity-section,.service-request-record-page .sr-attachments,.service-request-record-page .sr-approval-panel{padding:16px}.service-request-record-page .request-record-columns,.service-request-record-page .request-ci-details-grid{gap:13px 16px}}
+@media(max-width:590px){.service-request-record-page .sr-record-toolbar{align-items:flex-start;gap:10px}.service-request-record-page .sr-record-heading{flex-wrap:wrap}.service-request-record-page .sr-record-heading small{max-width:calc(100vw - 145px)}.service-request-record-page .sr-toolbar-actions{flex-wrap:wrap;justify-content:flex-end}.service-request-record-page .request-record-columns,.service-request-record-page .request-ci-details-grid,.service-request-record-page .sr-variables-grid{grid-template-columns:1fr;gap:12px}.service-request-record-page .request-ci-section,.service-request-record-page .sr-variables-section,.service-request-record-page .sr-activity-section,.service-request-record-page .sr-attachments,.service-request-record-page .sr-approval-panel{padding:14px 12px}.service-request-record-page .request-record-column{gap:12px}.service-request-record-page .request-ci-details-grid>.request-field{grid-column:1}.service-request-record-page .sr-variable-group-title{grid-column:1}.service-request-record-page .sr-variable-row{grid-template-columns:1fr;gap:4px}}

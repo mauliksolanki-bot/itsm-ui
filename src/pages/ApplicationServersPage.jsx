@@ -135,12 +135,12 @@ export default function ApplicationServersPage() {
   function resetFilters() { setSearch(''); setSearchParams({}, { replace: true }) }
   function toggleRow(id) { setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]) }
   function togglePage() { setSelected((current) => pageRows.every((record) => current.includes(record.onboardingId)) ? current.filter((id) => !pageRows.some((record) => record.onboardingId === id)) : [...new Set([...current, ...pageRows.map((record) => record.onboardingId)])]) }
-  function openRecord(record) { navigate(`/application-server/on-boarding?edit=${record.onboardingId}`) }
+  function openRecord(record) { navigate(`/cmdb/newci?edit=${record.onboardingId}`) }
   function summaryCard(label, value, tone, click) { return <button type="button" className={`ci-summary-card ci-summary-${tone}`} onClick={click}><span>{label}</span><strong>{value.toLocaleString()}</strong></button> }
 
   return <section className="configuration-items-page" aria-labelledby="ci-grid-title">
-    <div className="ci-page-breadcrumb"><Link to="/application-server/cmdb-dashboard">CMDB</Link><span>/</span><Link to="/application-server/cmdb-dashboard">Dashboard</Link><span>/</span><strong>Configuration Items</strong></div>
-    <header className="ci-page-heading"><div><span className="ci-page-eyebrow">CMDB · CONFIGURATION MANAGEMENT</span><h1 id="ci-grid-title">Configuration Items</h1><p>Complete inventory of configuration items managed in the CMDB.</p></div><div className="ci-page-actions"><button type="button" className="ci-secondary-button" onClick={() => downloadCsv(visibleRows, 'configuration-items.csv', rows)} disabled={!visibleRows.length}>↓ Export</button><Link className="ci-primary-button" to="/application-server/on-boarding">＋ Create CI</Link></div></header>
+    <div className="ci-page-breadcrumb"><Link to="/cmdb/dashboard">CMDB</Link><span>/</span><Link to="/cmdb/dashboard">Dashboard</Link><span>/</span><strong>Configuration Items</strong></div>
+    <header className="ci-page-heading"><div><span className="ci-page-eyebrow">CMDB · CONFIGURATION MANAGEMENT</span><h1 id="ci-grid-title">Configuration Items</h1><p>Complete inventory of configuration items managed in the CMDB.</p></div><div className="ci-page-actions"><button type="button" className="ci-secondary-button" onClick={() => downloadCsv(visibleRows, 'configuration-items.csv', rows)} disabled={!visibleRows.length}>↓ Export</button><Link className="ci-primary-button" to="/cmdb/newci">＋ Create CI</Link></div></header>
 
     <section className="ci-summary-cards" aria-label="CI summary">
       {summaryCard('Total CIs', total, 'total', resetFilters)}
@@ -183,7 +183,7 @@ export default function ApplicationServersPage() {
           : loadError ? <tr><td colSpan="13"><div className="ci-grid-state ci-grid-error" role="alert">{loadError}</div></td></tr>
             : pageRows.length ? pageRows.map((record) => { const detail = detailsFor(record); const services = serviceNamesFor(record, rows); const health = healthFor(record); return <tr key={record.onboardingId} className="ci-inventory-row" onClick={() => openRecord(record)}>
               <td className="ci-checkbox-cell" onClick={(event) => event.stopPropagation()}><input type="checkbox" aria-label={`Select ${record.applicationName}`} checked={selected.includes(record.onboardingId)} onChange={() => toggleRow(record.onboardingId)} /></td>
-              <td className="ci-name-cell"><Link to={`/application-server/on-boarding?edit=${record.onboardingId}`} onClick={(event) => event.stopPropagation()}><strong>{record.applicationName || '—'}</strong><small>{record.applicationNumber || record.applicationCode || 'CI number unavailable'}</small></Link></td>
+              <td className="ci-name-cell"><Link to={`/cmdb/newci?edit=${record.onboardingId}`} onClick={(event) => event.stopPropagation()}><strong>{record.applicationName || '—'}</strong><small>{record.applicationNumber || record.applicationCode || 'CI number unavailable'}</small></Link></td>
               <td>{record.applicationCategory || '—'}</td><td><span className="ci-type-pill">{record.applicationType || '—'}</span></td><td>{record.environment || '—'}</td>
               <td><span className={`ci-status-pill ci-status-${(record.status || '').toLowerCase().replaceAll(' ', '-')}`}>{record.status || '—'}</span></td><td><span className={`ci-criticality ci-criticality-${(record.businessCriticality || '').toLowerCase()}`}>{record.businessCriticality || '—'}</span></td>
               <td className="ci-service-cell" title={services.join(', ')}>{services.length ? services.join(', ') : '—'}</td><td>{record.applicationOwner?.displayName || '—'}</td><td>{record.managedByGroup?.groupName || '—'}</td><td>{dateFor(record)?.toLocaleDateString() || '—'}</td>

@@ -25,7 +25,7 @@ function AppRoutes() {
       <Route path="/administration/*" element={user ? <DashboardPage /> : <Navigate to="/login" replace />} />
       <Route path="/service-catalog/*" element={user ? <DashboardPage /> : <Navigate to="/login" replace />} />
       <Route path="/ticket-master/*" element={user ? <DashboardPage /> : <Navigate to="/login" replace />} />
-      <Route path="/application-server/*" element={user ? <DashboardPage /> : <Navigate to="/login" replace />} />
+      <Route path="/cmdb/*" element={user ? <DashboardPage /> : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
     </Routes>
   )

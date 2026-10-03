@@ -214,7 +214,7 @@ export default function ApplicationOnboardingPage() {
       const record = await fetch(editId ? `/api/application-onboarding/${editId}` : '/api/application-onboarding', {
         method: editId ? 'PATCH' : 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       }).then(responseBody)
-      if (editId) { notifyToast(`${record.applicationNumber} was updated.`, 'success', 'Changes saved'); navigate('/application-server/app-servers'); return }
+      if (editId) { notifyToast(`${record.applicationNumber} was updated.`, 'success', 'Changes saved'); navigate('/cmdb/cidata'); return }
       setCreated(record); setRecordNumber(record.applicationNumber); setErrors({})
       notifyToast(`${record.applicationNumber} has been created.`, 'success', 'CI created')
     } catch (failure) { setPageError(failure.message); notifyToast(failure.message, 'error', 'Create CI failed') }
@@ -231,9 +231,9 @@ export default function ApplicationOnboardingPage() {
   return <section className="service-request-page application-onboarding-page ci-create-page" aria-labelledby="application-onboarding-title">
     {created && <div className="request-alert request-success" role="status"><strong>Configuration item created</strong><span>{created.applicationNumber} · {created.applicationName}</span></div>}
     {pageError && <div className="request-alert" role="alert"><strong>We couldn’t save this configuration item.</strong><span>{pageError}</span></div>}
-    <header className="request-record-toolbar">
-      <div className="request-record-heading"><span className="request-record-menu" aria-hidden="true">▣</span><div><strong id="application-onboarding-title">{editId ? 'Edit Configuration Item' : 'Create Configuration Item'}</strong><small>{editId ? 'Update configuration item details' : 'Register a new item in the configuration database'}</small></div></div>
-      <div className="application-onboarding-toolbar-actions">{editId && <button type="button" className="application-onboarding-cancel" onClick={() => navigate('/application-server/app-servers')} disabled={submitting}>Cancel</button>}<button type="submit" form="application-onboarding-form" disabled={submitting || loadingRecord}>{submitting ? 'Saving…' : editId ? 'Save Changes' : 'Create CI'}</button></div>
+    <header className="change-form-heading application-onboarding-header">
+      <div className="change-form-heading-copy"><span className="change-form-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14m4-7h4m-4 4h4"/></svg></span><div><h2 id="application-onboarding-title">{editId ? 'Edit Configuration Item' : 'Create Configuration Item'}</h2><p>{editId ? 'Update configuration item details' : 'Register a new item in the configuration database'}</p></div></div>
+      <div className="change-form-heading-meta application-onboarding-toolbar-actions">{editId && <button type="button" className="application-onboarding-cancel" onClick={() => navigate('/cmdb/cidata')} disabled={submitting}>Cancel</button>}<button type="submit" form="application-onboarding-form" disabled={submitting || loadingRecord}>{submitting ? 'Saving…' : editId ? 'Save Changes' : 'Create CI'}</button></div>
     </header>
     {loadingRecord || !recordLoaded ? <div className="application-onboarding-loading" role={pageError ? 'alert' : 'status'}>{pageError || 'Loading configuration item…'}</div> : <form id="application-onboarding-form" className="service-request-form request-record-form ci-record-form" onSubmit={submit} noValidate>
       <nav className="ci-tabs" aria-label="Configuration item sections" role="tablist">{TABS.map((tab) => <button key={tab} type="button" role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? 'ci-tab ci-tab-active' : 'ci-tab'} onClick={() => setActiveTab(tab)}>{tab}</button>)}</nav>
@@ -324,7 +324,7 @@ export default function ApplicationOnboardingPage() {
           {field('additionalNotes', 'Additional Notes', 'textarea', [], { wide: true, rows: 5 })}{field('technicalNotes', 'Technical Notes', 'textarea', [], { wide: true, rows: 5 })}{field('operationalNotes', 'Operational Notes', 'textarea', [], { wide: true, rows: 5 })}
         </CISection>}
       </div>
-      <footer className="ci-form-footer"><span><b>*</b> Required fields</span><span>CI ID is assigned automatically.</span><div>{editId && <button type="button" className="ci-footer-secondary" onClick={() => navigate('/application-server/app-servers')} disabled={submitting}>Cancel</button>}<button type="submit" disabled={submitting || loadingRecord}>{submitting ? 'Saving…' : editId ? 'Save Changes' : 'Create CI'}</button></div></footer>
+      <footer className="ci-form-footer"><span><b>*</b> Required fields</span><span>CI ID is assigned automatically.</span><div>{editId && <button type="button" className="ci-footer-secondary" onClick={() => navigate('/cmdb/cidata')} disabled={submitting}>Cancel</button>}<button type="submit" disabled={submitting || loadingRecord}>{submitting ? 'Saving…' : editId ? 'Save Changes' : 'Create CI'}</button></div></footer>
     </form>}
   </section>
 }

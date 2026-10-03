@@ -306,9 +306,9 @@ function ServiceRequestCatalogPage({ user }) {
       {createdNumber && <div className="request-alert request-success" role="status"><strong>Request submitted</strong><span>{createdNumber} has been saved.</span></div>}
       {pageError && <div className="request-alert" role="alert"><strong>We couldn’t submit this request.</strong><span>{pageError}</span></div>}
 
-      <header className="request-record-toolbar">
-        <div className="request-record-heading"><span className="request-record-menu" aria-hidden="true">☰</span><div><strong id="service-request-title">Service Request</strong><small>New record [Default view]</small></div></div>
-        <button type="submit" form="service-request-create-form" disabled={submitting || loading}>{submitting ? 'Submitting…' : 'Submit'}</button>
+      <header className="change-form-heading service-request-form-heading">
+        <div className="change-form-heading-copy"><span className="change-form-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10a2 2 0 0 1 2 2v14H5V6a2 2 0 0 1 2-2Z"/><path d="M9 4V2h6v2M8 9h8M8 13h8M8 17h5"/></svg></span><div><h2 id="service-request-title">Service Request</h2><p>New record [Default view]</p></div></div>
+        <div className="application-onboarding-toolbar-actions"><button type="submit" form="service-request-create-form" disabled={submitting || loading}>{submitting ? 'Submitting…' : 'Submit'}</button></div>
       </header>
 
       <form id="service-request-create-form" className="service-request-form request-record-form" onSubmit={submit} noValidate>
@@ -346,8 +346,8 @@ function ServiceRequestCatalogPage({ user }) {
   )
 }
 
-function ServiceRequestPage({ user, requestId }) {
-  return requestId ? <ServiceRequestRecordPage requestId={requestId} user={user} /> : <ServiceRequestCatalogPage user={user} />
+function ServiceRequestPage({ user, requestId, basePath }) {
+  return requestId ? <ServiceRequestRecordPage requestId={requestId} user={user} basePath={basePath} /> : <ServiceRequestCatalogPage user={user} />
 }
 
 export default ServiceRequestPage

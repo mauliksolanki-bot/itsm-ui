@@ -229,15 +229,16 @@ function IncidentPage({ user }) {
 
   return (
     <section className="incident-page incident-create-page" aria-labelledby="incident-page-title">
-      <header className="incident-create-toolbar">
-        <div className="incident-create-record-title"><span className="incident-create-menu">☰</span><div><strong id="incident-page-title">Incident</strong><small>New record [Default view]</small></div></div>
-        <div className="incident-create-toolbar-actions"><button type="submit" form="incident-create-form" disabled={isSubmitting || isLoading}>{isSubmitting ? 'Submitting…' : 'Submit'}</button><button type="button" disabled title="A new incident cannot be resolved before it is created">Resolve Incident</button></div>
+      <header className="incident-ci-toolbar">
+        <div className="incident-ci-heading"><span className="incident-ci-icon" aria-hidden="true">▣</span><div><strong id="incident-page-title">Create Incident</strong><small>Report an incident and provide the information needed to resolve it.</small></div></div>
+        <div className="incident-ci-toolbar-actions"><button type="submit" form="incident-create-form" disabled={isSubmitting || isLoading}>{isSubmitting ? 'Submitting…' : 'Submit Incident'}</button><button type="button" className="incident-ci-secondary" disabled title="A new incident cannot be resolved before it is created">Resolve Incident</button></div>
       </header>
 
       {createdTicket && <div className="incident-success" role="status"><span className="incident-success-check">✓</span><span><strong>Incident created</strong><small>{createdTicket} has been saved.</small></span></div>}
       {formError && !createdTicket && <div className="incident-form-alert" role="alert"><strong>We couldn’t submit this incident.</strong><span>{formError}</span></div>}
 
       <form id="incident-create-form" className="incident-create-record-form" onSubmit={submitIncident} noValidate>
+        <div className="incident-ci-section-heading"><span className="incident-ci-section-marker" aria-hidden="true" /><div><h2>Incident Details</h2><p>Capture the caller, location, classification, and assignment information.</p></div></div>
         <div className="incident-create-columns">
           <div className="incident-create-column">
             <RecordField label="Number" value={createdIncident?.ticketNumber || ticketNumberPreview || 'Loading number…'} readOnly />
@@ -260,13 +261,14 @@ function IncidentPage({ user }) {
             {createdIncident && <RecordField label="Due date" value={formatDate(createdIncident.dueDate)} readOnly />}
           </div>
         </div>
+        <div className="incident-ci-section-heading incident-ci-section-heading-spaced"><span className="incident-ci-section-marker" aria-hidden="true" /><div><h2>Description & Notes</h2><p>Describe the issue and include any useful customer or internal notes.</p></div></div>
         <label className="incident-create-wide-field"><span>Short description <b>*</b></span><div className="incident-create-input-with-actions"><input name="title" value={form.title} onChange={updateField} maxLength={160} placeholder="Briefly describe the issue" aria-invalid={Boolean(fieldErrors.title)} /><button type="button" title="Suggestion">✦</button></div><small><FieldError>{fieldErrors.title}</FieldError>{form.title.length}/160</small></label>
         <label className="incident-create-wide-field"><span>Description <b>*</b></span><textarea name="description" value={form.description} onChange={updateField} maxLength={5000} rows={3} placeholder="What were you trying to do? What happened? Include any error message and steps already tried." aria-invalid={Boolean(fieldErrors.description)} /><small><FieldError>{fieldErrors.description}</FieldError>{form.description.length}/5,000</small></label>
         <label className="incident-create-wide-field"><span>Additional comments <small>(Customer visible)</small></span><textarea name="comment" value={form.comment} onChange={updateField} maxLength={2000} rows={3} placeholder="Add a comment visible to the requester and support team…" aria-invalid={Boolean(fieldErrors.comment)} /><small><FieldError>{fieldErrors.comment}</FieldError>{form.comment.length}/2,000</small></label>
         {canManage && <label className="incident-create-wide-field incident-create-work-notes"><span>Work notes <small>(Internal)</small></span><textarea name="workNote" value={form.workNote} onChange={updateField} maxLength={4000} rows={3} placeholder="Internal notes, visible only to support staff…" aria-invalid={Boolean(fieldErrors.workNote)} /><small><FieldError>{fieldErrors.workNote}</FieldError>{form.workNote.length}/4,000</small></label>}
         <label className="incident-create-active"><span>Active</span><input type="checkbox" checked disabled readOnly /><small>New incidents are active automatically.</small></label>
         <div className="incident-create-wide-field"><span>Attachments <small>(Optional · up to 5 files)</small></span><label className="incident-upload-zone"><input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.docx,.xlsx" onChange={handleFileSelection} disabled={files.length >= MAX_ATTACHMENTS} /><span className="incident-upload-icon" aria-hidden="true">↑</span><span><strong>Choose files to upload</strong><small>PDF, PNG, JPG, TXT, CSV, DOCX or XLSX · 5 MB each</small></span></label><FieldError>{fieldErrors.attachments}</FieldError>{files.length > 0 && <ul className="incident-file-list">{files.map((file, index) => <li key={`${file.name}-${file.lastModified}`}><span className="incident-file-type">{file.name.split('.').pop()?.toUpperCase()}</span><span className="incident-file-name"><strong>{file.name}</strong><small>{fileSize(file.size)}</small></span><button type="button" aria-label={`Remove ${file.name}`} onClick={() => { setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index)); setFieldErrors((current) => ({ ...current, attachments: '' })) }}>Remove</button></li>)}</ul>}</div>
-        <div className="incident-create-footer"><span>Fields marked <b>*</b> are required.</span><button type="submit" disabled={isSubmitting || isLoading}>{isSubmitting ? 'Submitting…' : 'Submit'}</button></div>
+        <div className="incident-ci-form-footer"><span>Fields marked <b>*</b> are required.</span><button type="submit" disabled={isSubmitting || isLoading}>{isSubmitting ? 'Submitting…' : 'Submit Incident'}</button></div>
       </form>
 
     </section>
