@@ -1,5 +1,5 @@
 import { notifyToast } from '../components/Toast.jsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, NavLink, useLocation, useNavigate } from 'react-router'
 import ItsmLogo from '../components/ItsmLogo.jsx'
 import NotificationBell from '../components/NotificationBell.jsx'
@@ -15,6 +15,8 @@ import ApprovalInboxPage from './ApprovalInboxPage.jsx'
 import ApplicationOnboardingPage from './ApplicationOnboardingPage.jsx'
 import ApplicationServersPage from './ApplicationServersPage.jsx'
 import CmdbDashboardPage from './CmdbDashboardPage.jsx'
+import CmdbRelationshipsPage from './CmdbRelationshipsPage.jsx'
+import CmdbAdministrationPage from './CmdbAdministrationPage.jsx'
 
 const modules = [
   { icon: 'T', title: 'My tickets', description: 'Create a ticket and follow its progress.', tone: 'blue' },
@@ -37,6 +39,8 @@ function SubmenuIcon({ code }) {
       : ['CHANGE_REQUEST', 'CHANGE_REQUEST_POOL'].includes(iconCode) ? 'change'
         : iconCode === 'TICKETS_POOL' ? 'ticket'
           : iconCode === 'CMDB_DASHBOARD' ? 'cmdb-dashboard'
+          : iconCode === 'CMDB_ADMINISTRATION' ? 'cmdb-administration'
+            : iconCode === 'CMDB_RELATIONSHIPS' ? 'cmdb-relationships'
             : iconCode === 'APPLICATION_ONBOARDING' ? 'onboarding'
             : iconCode === 'APPLICATION_SERVERS' ? 'app-servers' : 'default'
 
@@ -48,6 +52,8 @@ function SubmenuIcon({ code }) {
             : ['CHANGE_REQUEST', 'CHANGE_REQUEST_POOL'].includes(iconCode) ? <><path d="M20 7h-5a4 4 0 0 0-4 4v2a4 4 0 0 1-4 4H4" /><path d="m17 4 3 3-3 3M7 14l-3 3 3 3" /><path d="M4 7h2" /></>
               : iconCode === 'TICKETS_POOL' ? <><path d="M8 4.5h9.3a1.7 1.7 0 0 1 1.7 1.7v9.1" /><rect x="4.5" y="7.5" width="14.5" height="12.5" rx="2.2" /><path d="M8 11.5h7.5M8 14.5h7.5M8 17.5h4.5" /></>
                 : iconCode === 'CMDB_DASHBOARD' ? <><path d="M4 19a8 8 0 1 1 16 0"/><path d="m12 13 4-4M7 19h10M12 5v1"/><circle cx="12" cy="13" r="1"/></>
+                  : iconCode === 'CMDB_RELATIONSHIPS' ? <><rect x="3.5" y="4" width="7" height="6" rx="1.5"/><rect x="13.5" y="14" width="7" height="6" rx="1.5"/><path d="M10.5 7h2a2 2 0 0 1 2 2v2M13.5 17h-2a2 2 0 0 1-2-2v-2M6.2 7h1.6M15.2 17h1.6"/></>
+                    : iconCode === 'CMDB_ADMINISTRATION' ? <><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.8 1.8 0 0 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3 .9v.2a1.8 1.8 0 0 1-3.6 0v-.2a1.8 1.8 0 0 0-3-.9l-.1.1a1.8 1.8 0 0 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-.9-3h-.2a1.8 1.8 0 0 1 0-3.6h.2a1.8 1.8 0 0 0 .9-3l-.1-.1a1.8 1.8 0 0 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3-.9v-.2a1.8 1.8 0 0 1 3.6 0v.2a1.8 1.8 0 0 0 3 .9l.1-.1a1.8 1.8 0 0 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 .9 3h.2a1.8 1.8 0 0 1 0 3.6h-.2a1.8 1.8 0 0 0-.9 3Z"/></>
                   : iconCode === 'APPLICATION_ONBOARDING' ? <><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 9h6M9 13h2m1 2 1.5 1.5L18 13" /></>
                   : iconCode === 'APPLICATION_SERVERS' ? <><rect x="3.5" y="4" width="10" height="7" rx="1.5"/><path d="M6.5 7.5h.01M9 7.5h2M8.5 11v2.5"/><rect x="7.5" y="14" width="13" height="6.5" rx="1.5"/><path d="M10.5 17.25h.01M13 17.25h4.5"/><path d="M17 4h3.5v6.5H17zM18.5 6.2h.01M18.5 8.2h.01"/></>
               : <><path d="M5 5h14v14H5z" /><path d="M8 9h8M8 12h8M8 15h5" /></>}
@@ -69,6 +75,8 @@ export default function DashboardPage() {
   const [administrationOpen, setAdministrationOpen] = useState(() => location.pathname.startsWith('/administration'))
   const [ticketMasterOpen, setTicketMasterOpen] = useState(true)
   const [applicationServerOpen, setApplicationServerOpen] = useState(() => location.pathname.startsWith('/cmdb'))
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRootRef = useRef(null)
   const firstName = user?.displayName?.trim().split(/\s+/)[0] || 'there'
 
   useEffect(() => {
@@ -86,6 +94,20 @@ export default function DashboardPage() {
       .finally(() => { if (!controller.signal.aborted) setNavigationLoaded(true) })
     return () => controller.abort()
   }, [])
+
+  useEffect(() => {
+    if (!profileOpen) return undefined
+    function closeProfile(event) {
+      if (event.type === 'keydown' && event.key === 'Escape') setProfileOpen(false)
+      if (event.type === 'pointerdown' && !profileRootRef.current?.contains(event.target)) setProfileOpen(false)
+    }
+    document.addEventListener('pointerdown', closeProfile)
+    document.addEventListener('keydown', closeProfile)
+    return () => {
+      document.removeEventListener('pointerdown', closeProfile)
+      document.removeEventListener('keydown', closeProfile)
+    }
+  }, [profileOpen])
 
   const overviewMenu = navigationMenus.find((menu) => menu.menuCode === 'OVERVIEW')
   const myTicketsMenu = navigationMenus.find((menu) => menu.menuCode === 'MY_TICKETS')
@@ -132,7 +154,7 @@ export default function DashboardPage() {
   return (
     <main className="dashboard-layout">
       <aside className="dashboard-sidebar">
-        <div className="dashboard-brand"><ItsmLogo compact /></div>
+        <div className="dashboard-brand"><ItsmLogo compact /><span className="sidebar-brand-caption">IT SERVICE OPERATIONS</span></div>
         <p className="nav-section-label">WORKSPACE</p>
         <nav className="dashboard-nav" aria-label="Main navigation">
           {overviewMenu && <NavLink className={({ isActive }) => `nav-item${isActive && !activeSubmenu ? ' nav-item-active' : ''}`} to={overviewMenu.routePath}><span className="nav-icon overview-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m3.5 10 8.5-6.5 8.5 6.5v9.2a1.3 1.3 0 0 1-1.3 1.3h-5.1v-6h-4.2v6H4.8a1.3 1.3 0 0 1-1.3-1.3z" /></svg></span><span>{overviewMenu.menuName}</span></NavLink>}
@@ -141,7 +163,7 @@ export default function DashboardPage() {
           {serviceCatalog && (
             <div className="nav-menu-group">
               <button className={`nav-item nav-catalog-toggle${isServiceCatalogActive ? ' nav-item-active' : ''}`} type="button" aria-expanded={serviceCatalogOpen} aria-controls="service-catalog-submenus" onClick={() => setServiceCatalogOpen((open) => !open)}>
-                <span className="nav-icon">◈</span><span>{serviceCatalog.menuName}</span><span className={`nav-chevron${serviceCatalogOpen ? ' nav-chevron-open' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg></span>
+                <span className="nav-icon service-catalog-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><span>{serviceCatalog.menuName}</span><span className={`nav-chevron${serviceCatalogOpen ? ' nav-chevron-open' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg></span>
               </button>
               {serviceCatalogOpen && (
                 <div className="nav-submenu" id="service-catalog-submenus" aria-label={`${serviceCatalog.menuName} submenu`}>
@@ -154,20 +176,10 @@ export default function DashboardPage() {
               )}
             </div>
           )}
-          {administration && (
-            <div className="nav-menu-group">
-              <button className={`nav-item nav-catalog-toggle${location.pathname.startsWith('/administration') ? ' nav-item-active' : ''}`} type="button" aria-expanded={administrationOpen} aria-controls="administration-submenus" onClick={() => setAdministrationOpen((open) => !open)}>
-                <span className="nav-icon">⚙</span><span>{administration.menuName}</span><span className={`nav-chevron${administrationOpen ? ' nav-chevron-open' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg></span>
-              </button>
-              {administrationOpen && <div className="nav-submenu" id="administration-submenus" aria-label={`${administration.menuName} submenu`}>
-                {adminSubmenus.map((submenu) => <NavLink className={({ isActive }) => `nav-submenu-item${isActive ? ' nav-submenu-item-active' : ''}`} to={submenu.routePath} key={submenu.submenuId}><span className="nav-submenu-icon nav-submenu-icon-users" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20c.4-3.7 2.7-5.6 6.5-5.6s6.1 1.9 6.5 5.6z" /></svg></span>{submenu.submenuName}</NavLink>)}
-              </div>}
-            </div>
-          )}
           {ticketMaster && (
             <div className="nav-menu-group">
               <button className={`nav-item nav-catalog-toggle${location.pathname.startsWith('/ticket-master') ? ' nav-item-active' : ''}`} type="button" aria-expanded={ticketMasterOpen} aria-controls="ticket-master-submenus" onClick={() => setTicketMasterOpen((open) => !open)}>
-                <span className="nav-icon">▤</span><span>{ticketMaster.menuName}</span><span className={`nav-chevron${ticketMasterOpen ? ' nav-chevron-open' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg></span>
+                <span className="nav-icon ticket-master-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v16H7.5A2.5 2.5 0 0 0 5 21V5.5Z"/><path d="M5 6h11M9 9.5h6M9 13h6M9 16.5h4"/></svg></span><span>{ticketMaster.menuName}</span><span className={`nav-chevron${ticketMasterOpen ? ' nav-chevron-open' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg></span>
               </button>
               {ticketMasterOpen && <div className="nav-submenu" id="ticket-master-submenus" aria-label={`${ticketMaster.menuName} submenu`}>
                 {ticketMasterSubmenus.map((submenu) => <NavLink className={({ isActive }) => `nav-submenu-item${isActive ? ' nav-submenu-item-active' : ''}`} to={submenu.routePath} key={submenu.submenuId}><SubmenuIcon code={submenu.submenuCode} />{submenu.submenuName}</NavLink>)}
@@ -177,18 +189,42 @@ export default function DashboardPage() {
           {applicationServer && (
             <div className="nav-menu-group">
               <button className={`nav-item nav-catalog-toggle${isApplicationServerActive ? ' nav-item-active' : ''}`} type="button" aria-expanded={applicationServerOpen} aria-controls="application-server-submenus" onClick={() => setApplicationServerOpen((open) => !open)}>
-                <span className="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="3.5" width="7" height="6.5" rx="1.6"/><rect x="14" y="3.5" width="7" height="6.5" rx="1.6"/><rect x="8.5" y="14" width="7" height="6.5" rx="1.6"/><path d="M6.5 10v1.5c0 1 .8 1.5 2 1.5h7c1.2 0 2-.5 2-1.5V10M12 13v1"/></svg></span><span>{applicationServer.menuName}</span><span className={`nav-chevron${applicationServerOpen ? ' nav-chevron-open' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg></span>
+                <span className="nav-icon cmdb-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="3.5" width="7" height="6" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="6" rx="1.6"/><rect x="8.5" y="14.5" width="7" height="6" rx="1.6"/><path d="M7 9.5v1.2c0 1.1.8 1.8 2 1.8h6c1.2 0 2-.7 2-1.8V9.5M12 12.5v2"/></svg></span><span>{applicationServer.menuName}</span><span className={`nav-chevron${applicationServerOpen ? ' nav-chevron-open' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg></span>
               </button>
               {applicationServerOpen && <div className="nav-submenu" id="application-server-submenus" aria-label={`${applicationServer.menuName} submenu`}>
                 {applicationServerSubmenus.map((submenu) => <NavLink className={({ isActive }) => `nav-submenu-item${isActive ? ' nav-submenu-item-active' : ''}`} to={submenu.routePath} key={submenu.submenuId}><SubmenuIcon code={submenu.submenuCode} />{submenu.submenuName}</NavLink>)}
               </div>}
             </div>
           )}
+          {administration && (
+            <div className="nav-menu-group">
+              <button className={`nav-item nav-catalog-toggle${location.pathname.startsWith('/administration') ? ' nav-item-active' : ''}`} type="button" aria-expanded={administrationOpen} aria-controls="administration-submenus" onClick={() => setAdministrationOpen((open) => !open)}>
+                <span className="nav-icon administration-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m12 3.2 7 2.6v5.1c0 4.2-2.5 7.7-7 9.9-4.5-2.2-7-5.7-7-9.9V5.8l7-2.6Z"/><circle cx="12" cy="9.2" r="2.1"/><path d="M8.3 15.5c.5-1.7 1.7-2.6 3.7-2.6s3.2.9 3.7 2.6"/></svg></span><span>{administration.menuName}</span><span className={`nav-chevron${administrationOpen ? ' nav-chevron-open' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="m7 10 5 5 5-5" /></svg></span>
+              </button>
+              {administrationOpen && <div className="nav-submenu" id="administration-submenus" aria-label={`${administration.menuName} submenu`}>
+                {adminSubmenus.map((submenu) => <NavLink className={({ isActive }) => `nav-submenu-item${isActive ? ' nav-submenu-item-active' : ''}`} to={submenu.routePath} key={submenu.submenuId}><span className="nav-submenu-icon nav-submenu-icon-users" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3.2" /><path d="M5.5 20c.4-3.7 2.7-5.6 6.5-5.6s6.1 1.9 6.5 5.6z" /></svg></span>{submenu.submenuName}</NavLink>)}
+              </div>}
+            </div>
+          )}
           {!serviceCatalog && navigationError && <span className="nav-load-error" role="status">Service Catalog unavailable</span>}
-          <button className="nav-item nav-item-muted" type="button" disabled><span className="nav-icon">⌕</span><span>Knowledge base</span><span className="nav-soon">Soon</span></button>
+          <button className="nav-item nav-item-muted" type="button" disabled><span className="nav-icon knowledge-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m15.5 15.5 4.2 4.2"/></svg></span><span>Knowledge base</span><span className="nav-soon">Soon</span></button>
         </nav>
-        <div className="sidebar-bottom">
-          <div className="sidebar-org"><span className="org-avatar">{initials(user?.displayName || user?.username)}</span><span><strong>{user?.displayName || user?.username}</strong><small>Signed in as</small></span></div>
+        <div className="sidebar-bottom" ref={profileRootRef}>
+          {profileOpen && <section className="sidebar-profile-panel" id="sidebar-profile-panel" role="dialog" aria-label="Your account information">
+            <div className="sidebar-profile-panel-heading"><span className="sidebar-profile-panel-avatar">{initials(user?.displayName || user?.username)}</span><span><strong>{user?.displayName || user?.username}</strong><small>{user?.email || user?.username || 'Signed-in account'}</small></span></div>
+            <div className="sidebar-profile-details">
+              {user?.username && <div><small>Username</small><strong>{user.username}</strong></div>}
+              {user?.employeeId && <div><small>Employee ID</small><strong>{user.employeeId}</strong></div>}
+              {(user?.departmentName || user?.department) && <div><small>Department</small><strong>{user.departmentName || user.department}</strong></div>}
+              {user?.designation && <div><small>Designation</small><strong>{user.designation}</strong></div>}
+            </div>
+            <div className="sidebar-profile-roles"><small>ACCESS ROLES</small><div>{(user?.roles || []).length ? user.roles.map((role) => <span key={role}>{readableRole(role)}</span>) : <span>No roles assigned</span>}</div></div>
+          </section>}
+          <button className={`sidebar-profile-trigger${profileOpen ? ' sidebar-profile-trigger-open' : ''}`} type="button" aria-expanded={profileOpen} aria-controls="sidebar-profile-panel" aria-haspopup="dialog" onClick={() => setProfileOpen((open) => !open)}>
+            <span className="org-avatar">{initials(user?.displayName || user?.username)}</span>
+            <span className="sidebar-profile-trigger-copy"><strong>{user?.displayName || user?.username}</strong><small><i aria-hidden="true" />View profile &amp; access</small></span>
+            <svg className="sidebar-profile-trigger-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
+          </button>
         </div>
       </aside>
 
@@ -204,7 +240,7 @@ export default function DashboardPage() {
         </header>
 
           <div className={`dashboard-content${location.pathname.startsWith('/approvals') || location.pathname.startsWith('/my-tickets') || location.pathname.startsWith('/administration/users') || location.pathname.startsWith('/ticket-master') || location.pathname.startsWith('/cmdb') || serviceRequestDetail || myChangeDetail ? ' dashboard-content-wide' : ''}${location.pathname === '/administration/users' ? ' dashboard-content-users' : ''}${serviceRequestDetail || myTicketDetail?.[1] === 'SERVICE_REQUEST' ? ' dashboard-content-request-record' : ''}${myChangeDetail || activeSubmenu?.submenuCode === 'CHANGE_REQUEST' ? ' dashboard-content-change-request' : ''}${activeSubmenu?.submenuCode === 'APPLICATION_ONBOARDING' ? ' dashboard-content-onboarding' : ''}${location.pathname === '/administration/users/new' ? ' dashboard-content-user-create' : ''}`}>
-          {location.pathname.startsWith('/approvals') ? (canAccessApprovals ? <ApprovalInboxPage /> : navigationLoaded ? <Navigate to="/dashboard" replace /> : <div className="approval-access-check">Checking approval access…</div>) : location.pathname.startsWith('/cmdb') ? (applicationServer ? activeSubmenu?.submenuCode === 'CMDB_DASHBOARD' ? <CmdbDashboardPage /> : activeSubmenu?.submenuCode === 'APPLICATION_SERVERS' ? <ApplicationServersPage /> : activeSubmenu?.submenuCode === 'APPLICATION_ONBOARDING' ? <ApplicationOnboardingPage /> : navigationLoaded ? <Navigate to="/dashboard" replace /> : <div className="approval-access-check">Checking access…</div> : navigationLoaded ? <Navigate to="/dashboard" replace /> : <div className="approval-access-check">Checking access…</div>) : location.pathname.startsWith('/administration/users') ? <UserManagementPage /> : myChangeDetail ? <ChangeRequestPage user={user} changeId={myChangeDetail[1]} /> : myTicketDetail ? myTicketDetail[1] === 'SERVICE_REQUEST' ? <ServiceRequestPage user={user} requestId={myTicketDetail[2]} basePath="/my-tickets" /> : <TicketDetailPage queue="MY_TICKETS" type={myTicketDetail[1]} ticketId={myTicketDetail[2]} basePath="/my-tickets" user={user} /> : location.pathname === '/my-tickets' ? <TicketPage user={user} /> : ticketDetail ? <TicketDetailPage queue={ticketDetail[1] === 'tickets-pool' ? 'TICKETS' : 'CHANGES'} type={ticketDetail[2]} ticketId={ticketDetail[3]} basePath={`/ticket-master/${ticketDetail[1]}`} user={user} /> : serviceRequestDetail ? <ServiceRequestPage user={user} requestId={serviceRequestDetail[1]} /> : activeSubmenu?.submenuCode === 'TICKETS_POOL' ? <TicketPoolPage queue="TICKETS" /> : activeSubmenu?.submenuCode === 'CHANGE_REQUEST_POOL' ? <TicketPoolPage queue="CHANGES" /> : activeSubmenu?.submenuCode === 'INCIDENT' ? <IncidentPage user={user} /> : activeSubmenu?.submenuCode === 'SERVICE_REQUEST' ? <ServiceRequestPage user={user} /> : activeSubmenu?.submenuCode === 'CHANGE_REQUEST' ? <ChangeRequestPage user={user} /> : activeSubmenu ? (
+          {location.pathname.startsWith('/approvals') ? (canAccessApprovals ? <ApprovalInboxPage /> : navigationLoaded ? <Navigate to="/dashboard" replace /> : <div className="approval-access-check">Checking approval access…</div>) : location.pathname.startsWith('/cmdb') ? (applicationServer ? activeSubmenu?.submenuCode === 'CMDB_DASHBOARD' ? <CmdbDashboardPage /> : activeSubmenu?.submenuCode === 'CMDB_ADMINISTRATION' ? <CmdbAdministrationPage /> : activeSubmenu?.submenuCode === 'CMDB_RELATIONSHIPS' ? <CmdbRelationshipsPage /> : activeSubmenu?.submenuCode === 'APPLICATION_SERVERS' ? <ApplicationServersPage /> : activeSubmenu?.submenuCode === 'APPLICATION_ONBOARDING' ? <ApplicationOnboardingPage /> : navigationLoaded ? <Navigate to="/dashboard" replace /> : <div className="approval-access-check">Checking access…</div> : navigationLoaded ? <Navigate to="/dashboard" replace /> : <div className="approval-access-check">Checking access…</div>) : location.pathname.startsWith('/administration/users') ? <UserManagementPage /> : myChangeDetail ? <ChangeRequestPage user={user} changeId={myChangeDetail[1]} /> : myTicketDetail ? myTicketDetail[1] === 'SERVICE_REQUEST' ? <ServiceRequestPage user={user} requestId={myTicketDetail[2]} basePath="/my-tickets" /> : <TicketDetailPage queue="MY_TICKETS" type={myTicketDetail[1]} ticketId={myTicketDetail[2]} basePath="/my-tickets" user={user} /> : location.pathname === '/my-tickets' ? <TicketPage user={user} /> : ticketDetail ? <TicketDetailPage queue={ticketDetail[1] === 'tickets-pool' ? 'TICKETS' : 'CHANGES'} type={ticketDetail[2]} ticketId={ticketDetail[3]} basePath={`/ticket-master/${ticketDetail[1]}`} user={user} /> : serviceRequestDetail ? <ServiceRequestPage user={user} requestId={serviceRequestDetail[1]} /> : activeSubmenu?.submenuCode === 'TICKETS_POOL' ? <TicketPoolPage queue="TICKETS" /> : activeSubmenu?.submenuCode === 'CHANGE_REQUEST_POOL' ? <TicketPoolPage queue="CHANGES" /> : activeSubmenu?.submenuCode === 'INCIDENT' ? <IncidentPage user={user} /> : activeSubmenu?.submenuCode === 'SERVICE_REQUEST' ? <ServiceRequestPage user={user} /> : activeSubmenu?.submenuCode === 'CHANGE_REQUEST' ? <ChangeRequestPage user={user} /> : activeSubmenu ? (
             <section className="catalog-workspace" aria-labelledby="catalog-workspace-title">
               <div className="dashboard-welcome">
                 <div>

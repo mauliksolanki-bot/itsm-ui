@@ -30,10 +30,9 @@ export default function UserManagementPage() {
   const isCreate = path.endsWith('/new')
   const isEdit = Boolean(userId && location.pathname.endsWith('/edit'))
   const [options, setOptions] = useState({ roles: [], groups: [], departments: [], locations: [], managers: [], teams: [], designations: [], costCenters: [], managerMappings: [] })
+  const [optionsLoading, setOptionsLoading] = useState(true)
   const [rows, setRows] = useState([])
   const [detail, setDetail] = useState(null)
-  const [ticketData, setTicketData] = useState(null)
-  const [tab, setTab] = useState('ROLES')
   const [step, setStep] = useState(0)
   const [form, setForm] = useState(EMPTY_FORM)
   const [columnFilters, setColumnFilters] = useState({})
@@ -61,7 +60,8 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     let active = true
-    fetch(`/api/users/options?includePeople=${!listMode}`, { credentials: 'include' }).then(readApi).then((data) => { if (active) setOptions(data) }).catch((reason) => { if (active) { setError(reason.message); notifyToast(reason.message, 'error', 'User options unavailable') } })
+    setOptionsLoading(true)
+    fetch(`/api/users/options?includePeople=${!listMode}`, { credentials: 'include' }).then(readApi).then((data) => { if (active) setOptions(data) }).catch((reason) => { if (active) { setError(reason.message); notifyToast(reason.message, 'error', 'User options unavailable') } }).finally(() => { if (active) setOptionsLoading(false) })
     return () => { active = false }
   }, [listMode])
 
@@ -116,13 +116,6 @@ export default function UserManagementPage() {
     }, 0)
     return () => { controller.abort(); clearTimeout(timer) }
   }, [columnFilters, listMode, page, pageInfo.size])
-
-  useEffect(() => {
-    if (tab !== 'TICKETS' || !userId) return
-    let active = true
-    fetch(`/api/users/${userId}/tickets`, { credentials: 'include' }).then(readApi).then((data) => { if (active) setTicketData(data) }).catch((reason) => { if (active) { setError(reason.message); notifyToast(reason.message, 'error', 'User tickets unavailable') } })
-    return () => { active = false }
-  }, [tab, userId])
 
   function update(field, value) {
     setForm((current) => {
@@ -226,30 +219,24 @@ export default function UserManagementPage() {
     } catch (reason) { setError(reason.message); notifyToast(reason.message, 'error', 'Account action failed') } finally { setSaving(false) }
   }
 
-  async function saveProfile(draft) {
+  async function saveProfile(draft, access) {
     setSaving(true); setError(''); setSuccess('')
     try {
-      const result = await readApi(await fetch(`/api/users/${userId}/profile`, {
+      const result = await readApi(await fetch(`/api/users/${userId}`, {
         method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firstName: draft.firstName.trim(), lastName: draft.lastName.trim(),
-          email: draft.email.trim(), phone: draft.phone.trim() || null,
+          firstName: draft.firstName.trim(), lastName: draft.lastName.trim(), employeeId: detail.employeeId,
+          email: draft.email.trim(), phone: draft.phone.trim() || null, departmentId: detail.departmentId,
+          teamId: detail.teamId, designationId: detail.designationId, managerId: detail.managerId,
+          locationId: detail.locationId, employmentType: detail.employmentType, costCenterId: detail.costCenterId,
+          roleId: Number(access.roleId), groupIds: access.groupIds.map(Number),
+          primaryGroupId: Number(access.primaryGroupId), status: detail.active ? 'ACTIVE' : 'INACTIVE',
+          mfaRequired: false,
         }),
       }))
-      setDetail(result); setSuccess('User details saved successfully.'); notifyToast('User profile details were saved.', 'success', 'Profile updated')
-    } catch (reason) { setError(reason.message); notifyToast(reason.message, 'error', 'Profile update failed'); throw reason } finally { setSaving(false) }
-  }
-
-  async function saveGroupAssignments(groupIds, primaryGroupId) {
-    setSaving(true); setError(''); setSuccess('')
-    try {
-      const result = await readApi(await fetch(`/api/users/${userId}/groups`, {
-        method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupIds: groupIds.map(Number), primaryGroupId: Number(primaryGroupId) }),
-      }))
-      setDetail(result); setSuccess('User group assignments saved successfully.'); notifyToast('Group assignments were saved.', 'success', 'Groups updated')
+      setDetail(result); setSuccess('User details saved successfully.'); notifyToast('User profile, role, and group details were saved.', 'success', 'User updated')
       return result
-    } catch (reason) { setError(reason.message); notifyToast(reason.message, 'error', 'Group update failed'); throw reason } finally { setSaving(false) }
+    } catch (reason) { setError(reason.message); notifyToast(reason.message, 'error', 'User update failed'); throw reason } finally { setSaving(false) }
   }
 
   async function copyTemporaryPassword() {
@@ -258,9 +245,9 @@ export default function UserManagementPage() {
   }
 
   if (listMode) return <UsersList rows={rows} options={options} columnFilters={columnFilters} setColumnFilters={setColumnFilters} page={page} setPage={setPage} pageInfo={pageInfo} loading={loading} error={error} onCreate={() => navigate('/administration/users/new')} onOpen={(id) => navigate(`/administration/users/${id}`)} />
-  if (isCreate) return <CreateUserRecordForm options={options} form={form} update={update} role={role} employeeIdPreview={employeeIdPreview} departmentTeams={departmentTeams} eligibleManagers={eligibleManagers} designationCostCenters={designationCostCenters} activeGroupChoices={activeGroupChoices} error={error} saving={saving} showPassword={showPassword} setShowPassword={setShowPassword} toggleGroup={toggleGroup} submitUser={submitUser} onCancel={() => navigate('/administration/users')} />
+  if (isCreate) return <CreateUserRecordForm options={options} form={form} update={update} role={role} employeeIdPreview={employeeIdPreview} departmentTeams={departmentTeams} eligibleManagers={eligibleManagers} designationCostCenters={designationCostCenters} error={error} saving={saving} showPassword={showPassword} setShowPassword={setShowPassword} toggleGroup={toggleGroup} submitUser={submitUser} onCancel={() => navigate('/administration/users')} />
   if (isEdit) return <UserWizard isEdit userId={userId} detail={detail} loading={loading} options={options} form={form} update={update} role={role} employeeIdPreview={employeeIdPreview} departmentTeams={departmentTeams} eligibleManagers={eligibleManagers} designationCostCenters={designationCostCenters} activeGroupChoices={activeGroupChoices} step={step} setStep={setStep} error={error} saving={saving} showPassword={showPassword} setShowPassword={setShowPassword} toggleGroup={toggleGroup} validateStep={validateStep} nextStep={nextStep} submitUser={submitUser} onCancel={() => navigate(`/administration/users/${userId}`)} />
-  return <UserDetailView detail={detail} ticketData={ticketData} groupOptions={options.groups} tab={tab} setTab={setTab} loading={loading} error={error} success={success} temporaryPassword={temporaryPassword} saving={saving} deactivateOpen={deactivateOpen} setDeactivateOpen={setDeactivateOpen} deactivateReason={deactivateReason} setDeactivateReason={setDeactivateReason} submitDeactivate={submitDeactivate} lockOpen={lockOpen} setLockOpen={setLockOpen} lockReason={lockReason} setLockReason={setLockReason} submitLock={lockAccount} onManageAccount={manageAccount} onEdit={() => navigate(`/administration/users/${userId}/edit`)} onSaveGroups={saveGroupAssignments} onSaveProfile={saveProfile} onBack={() => navigate('/administration/users')} onResetPassword={resetPassword} onCopy={copyTemporaryPassword} />
+  return <UserDetailView detail={detail} roles={options.roles} groups={options.groups} optionsLoading={optionsLoading} loading={loading} error={error} success={success} temporaryPassword={temporaryPassword} saving={saving} deactivateOpen={deactivateOpen} setDeactivateOpen={setDeactivateOpen} deactivateReason={deactivateReason} setDeactivateReason={setDeactivateReason} submitDeactivate={submitDeactivate} lockOpen={lockOpen} setLockOpen={setLockOpen} lockReason={lockReason} setLockReason={setLockReason} submitLock={lockAccount} onManageAccount={manageAccount} onSaveProfile={saveProfile} onBack={() => navigate('/administration/users')} onResetPassword={resetPassword} onCopy={copyTemporaryPassword} />
 }
 
 function UsersFilterIcon({ type }) {
@@ -326,70 +313,49 @@ function UsersList({ rows, options, columnFilters, setColumnFilters, page, setPa
   </section>
 }
 
-function CreateUserRecordForm({ options, form, update, role, employeeIdPreview, departmentTeams, eligibleManagers, designationCostCenters, activeGroupChoices, error, saving, showPassword, setShowPassword, toggleGroup, submitUser, onCancel }) {
-  const roleOptions = options.roles.map((item) => ({ value: item.id, label: item.name }))
-  const departmentOptions = options.departments.map((item) => ({ value: item.id, label: item.name }))
-  const teamOptions = departmentTeams.map((item) => ({ value: item.id, label: item.name }))
-  const designationOptions = options.designations.map((item) => ({ value: item.id, label: item.name }))
-  const managerOptions = eligibleManagers.map((item) => ({ value: item.id, label: `${item.name} · ${options.designations.find((entry) => String(entry.id) === String(item.designationId))?.name || 'Manager'}` }))
-  const locationOptions = options.locations.map((item) => ({ value: item.id, label: item.name }))
-  const costCenterOptions = designationCostCenters.map((item) => ({ value: item.id, label: `${item.code} · ${item.name}` }))
-  const selectedRole = roleOptions.some((item) => String(item.value) === String(form.roleId))
+function CreateUserRecordForm({ options, form, update, role, employeeIdPreview, departmentTeams, eligibleManagers, designationCostCenters, error, saving, showPassword, setShowPassword, toggleGroup, submitUser, onCancel }) {
   function choosePrimaryGroup(groupId) {
     if (!form.groupIds.includes(groupId)) toggleGroup(groupId)
     update('primaryGroupId', String(groupId))
   }
-  return <section className="users-page">
+  return <section className="users-page user-detail-page create-user-detail-page">
     {error && <div className="users-alert" role="alert">{error}</div>}
-    <header className="user-record-toolbar user-create-toolbar">
-      <div className="user-record-heading"><span className="user-record-menu" aria-hidden="true">▣</span><div><strong>Create User</strong><small>New record [Default view]</small></div></div>
-      <div className="user-record-actions"><button type="button" onClick={onCancel} disabled={saving}>Cancel</button><button type="submit" form="create-user-record" disabled={saving || !selectedRole || !form.groupIds.length || !form.primaryGroupId}>{saving ? 'Creating…' : 'Create user'}</button></div>
-    </header>
-    <form id="create-user-record" className="user-record-form user-create-record-form" onSubmit={submitUser} noValidate>
-      <div className="user-record-columns">
-        <div className="user-record-column">
-          <RecordField label="User ID" value={employeeIdPreview ? employeeIdPreview.toLowerCase() : ''} placeholder="Generated from role" />
-          <RecordField label="First name" value={form.firstName} editable required onChange={(value) => update('firstName', value)} />
-          <RecordField label="Last name" value={form.lastName} editable required onChange={(value) => update('lastName', value)} />
-          <RecordField label="Title" value={form.designationId} options={designationOptions} placeholder="Select designation" editable required onChange={(value) => update('designationId', value)} />
-          <RecordField label="Department" value={form.departmentId} options={departmentOptions} placeholder="Select department" editable required onChange={(value) => update('departmentId', value)} />
-          <label className="user-record-field"><span>Temporary password *</span><span className="create-password-input"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength="12" required value={form.password} onChange={(event) => update('password', event.target.value)} /><button type="button" onClick={() => setShowPassword((current) => !current)}>{showPassword ? 'Hide' : 'Show'}</button></span></label>
-          <RecordField label="Team" value={form.teamId} options={teamOptions} placeholder={form.departmentId ? 'Select team' : 'Select department first'} editable={Boolean(form.departmentId)} onChange={(value) => update('teamId', value)} />
-          <RecordField label="Manager" value={form.managerId} options={managerOptions} placeholder={form.designationId ? 'No manager selected' : 'Select designation first'} editable={Boolean(form.designationId)} onChange={(value) => update('managerId', value)} />
-          <RecordField label="Location" value={form.locationId} options={locationOptions} placeholder="Select location" editable onChange={(value) => update('locationId', value)} />
-          <RecordField label="Cost center" value={form.costCenterId} options={costCenterOptions} placeholder={form.designationId ? 'Select cost center' : 'Select designation first'} editable={Boolean(form.designationId)} required onChange={(value) => update('costCenterId', value)} />
-        </div>
-        <div className="user-record-column">
-          <RecordField label="Employee ID" value={employeeIdPreview} placeholder="Generated from role" />
-          <RecordField label="Email" value={form.email} placeholder="Enter name to generate email" editable={false} required type="email" />
-          <RecordField label="Business phone" value={form.phone} placeholder="Optional" editable type="tel" onChange={(value) => update('phone', value)} />
-          <RecordField label="Employment type" value={form.employmentType} options={[{ value: 'FULL_TIME', label: 'Full time' }, { value: 'PART_TIME', label: 'Part time' }, { value: 'CONTRACTOR', label: 'Contractor' }, { value: 'TEMPORARY', label: 'Temporary' }, { value: 'INTERN', label: 'Intern' }]} editable onChange={(value) => update('employmentType', value)} />
-          <RecordField label="Primary role" value={form.roleId} options={roleOptions} placeholder="Select role" editable required onChange={(value) => update('roleId', value)} />
-          <RecordField label="Account status" value={form.status} options={[{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }]} editable onChange={(value) => update('status', value)} />
-          <RecordField label="Password needs reset" value={String(form.mustChangePassword)} options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]} editable required onChange={(value) => update('mustChangePassword', value === 'true')} />
-        </div>
-      </div>
-      <div className="user-create-form-notes">
-        <div className="user-create-auto-note"><span>✦</span><div><strong>Automatic account details</strong><small>Email is suggested from the name. User ID and Employee ID are generated from the selected role.</small></div></div>
-        {role && <div className="user-create-role-note"><strong>{role.name}</strong><small>{role.description}</small></div>}
-      </div>
-      <section className="user-create-groups"><div className="user-create-section-title"><span>02</span><div><strong>Role &amp; support groups</strong><small>Choose at least one group and designate the primary group</small></div></div>
-        <div className="user-create-group-grid">{options.groups.map((group, index) => {
-          const selected = form.groupIds.includes(group.id)
-          const primary = String(form.primaryGroupId) === String(group.id)
-          const checkboxId = `create-user-group-${group.id}`
-          return <div className={`user-create-group${selected ? ' selected' : ''}${primary ? ' primary' : ''}`} key={group.id}>
-            <input id={checkboxId} type="checkbox" checked={selected} onChange={() => toggleGroup(group.id)} />
-            <span className={`group-color group-color-${index % 5}`}>{group.code?.slice(0, 2)}</span>
-            <span className="user-create-group-info"><label htmlFor={checkboxId}><strong>{group.name}</strong><small>{group.code}</small></label></span>
-            <button type="button" className="user-create-primary-star" aria-label={primary ? `${group.name} is the primary group` : `Set ${group.name} as primary group`} aria-pressed={primary} title={primary ? 'Primary group' : 'Set as primary group'} onClick={() => choosePrimaryGroup(group.id)}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.55 5.17 5.7.83-4.12 4.02.97 5.68L12 16.62l-5.1 2.68.97-5.68-4.12-4.02 5.7-.83L12 3.6Z" /></svg>
-            </button>
-          </div>
-        })}</div>
-      </section>
+    <header className="user-record-toolbar user-detail-toolbar"><div className="user-record-heading"><button type="button" onClick={onCancel} aria-label="Back to users">‹</button><span className="user-detail-avatar">＋</span><div><span className="user-detail-kicker">NEW USER ACCOUNT</span><strong>Create user</strong><small>Set up profile, organization, and access.</small></div></div><div className="user-record-actions"><button type="button" onClick={onCancel} disabled={saving}>Cancel</button><button type="submit" form="create-user-record" disabled={saving || !role || !form.groupIds.length || !form.primaryGroupId}>{saving ? 'Creating…' : 'Create user'}</button></div></header>
+    <form id="create-user-record" className="user-detail-form create-user-detail-form" onSubmit={submitUser} noValidate>
+      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Basic Information</h2><p>Identity and contact details for this account.</p></div></header><div className="user-detail-fields">
+        <CreateUserField label="User ID" value={employeeIdPreview ? employeeIdPreview.toLowerCase() : ''} placeholder="Generated from role" readOnly />
+        <CreateUserField label="Email" value={form.email} placeholder="Suggested after entering a name" type="email" required readOnly />
+        <CreateUserField label="First name" value={form.firstName} required onChange={(value) => update('firstName', value)} />
+        <CreateUserSelect label="Title" value={form.designationId} options={options.designations.map((item) => ({ value: item.id, label: item.name }))} placeholder="Select designation" required onChange={(value) => update('designationId', value)} />
+        <CreateUserField label="Last name" value={form.lastName} required onChange={(value) => update('lastName', value)} />
+        <CreateUserSelect label="Department" value={form.departmentId} options={options.departments.map((item) => ({ value: item.id, label: item.name }))} placeholder="Select department" required onChange={(value) => update('departmentId', value)} />
+        <CreateUserField label="Employee ID" value={employeeIdPreview} placeholder="Generated from role" readOnly />
+        <CreateUserField label="Business phone" value={form.phone} placeholder="Optional" type="tel" onChange={(value) => update('phone', value)} />
+      </div></div>
+      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Organization</h2><p>Set the user’s team, reporting line, and workplace details.</p></div></header><div className="user-detail-fields">
+        <CreateUserSelect label="Team" value={form.teamId} options={departmentTeams.map((item) => ({ value: item.id, label: item.name }))} placeholder={form.departmentId ? 'Select team' : 'Select department first'} disabled={!form.departmentId} onChange={(value) => update('teamId', value)} />
+        <CreateUserSelect label="Manager" value={form.managerId} options={eligibleManagers.map((item) => ({ value: item.id, label: `${item.name} · ${options.designations.find((entry) => String(entry.id) === String(item.designationId))?.name || 'Manager'}` }))} placeholder={form.designationId ? 'No manager selected' : 'Select designation first'} disabled={!form.designationId} onChange={(value) => update('managerId', value)} />
+        <CreateUserSelect label="Location" value={form.locationId} options={options.locations.map((item) => ({ value: item.id, label: item.name }))} placeholder="Select location" onChange={(value) => update('locationId', value)} />
+        <CreateUserSelect label="Cost center" value={form.costCenterId} options={designationCostCenters.map((item) => ({ value: item.id, label: `${item.code} · ${item.name}` }))} placeholder={form.designationId ? 'Select cost center' : 'Select designation first'} disabled={!form.designationId} required onChange={(value) => update('costCenterId', value)} />
+        <CreateUserSelect label="Employment type" value={form.employmentType} options={[{ value: 'FULL_TIME', label: 'Full time' }, { value: 'PART_TIME', label: 'Part time' }, { value: 'CONTRACTOR', label: 'Contractor' }, { value: 'TEMPORARY', label: 'Temporary' }, { value: 'INTERN', label: 'Intern' }]} onChange={(value) => update('employmentType', value)} />
+      </div></div>
+      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Account &amp; Security</h2><p>Choose account status and first sign-in security settings.</p></div></header><div className="user-detail-fields">
+        <CreateUserSelect label="Account status" value={form.status} options={[{ value: 'ACTIVE', label: 'Active' }, { value: 'INACTIVE', label: 'Inactive' }]} onChange={(value) => update('status', value)} />
+        <label className="user-detail-field"><span>Temporary password <b>*</b></span><span className="create-user-password-field"><input type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength="12" required value={form.password} onChange={(event) => update('password', event.target.value)} /><button type="button" onClick={() => setShowPassword((current) => !current)}>{showPassword ? 'Hide' : 'Show'}</button></span><small>Use at least 12 characters. It is stored securely.</small></label>
+        <CreateUserSelect label="Require password reset" value={String(form.mustChangePassword)} options={[{ value: 'true', label: 'Yes, at next sign in' }, { value: 'false', label: 'No' }]} onChange={(value) => update('mustChangePassword', value === 'true')} />
+      </div></div>
+      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Roles</h2><p>{role ? '1 role selected' : 'Choose one access role for this account.'}</p></div></header><div className="user-detail-role-options" role="radiogroup" aria-label="Choose primary role">{options.roles.map((item, index) => { const selected = String(form.roleId) === String(item.id); return <label className={`user-detail-role-option${selected ? ' is-selected' : ''}`} key={item.id}><input type="radio" name="create-user-primary-role" value={item.id} checked={selected} onChange={() => update('roleId', String(item.id))} /><span className={`user-detail-role-option-icon role-color-${index % 5}`}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3.2 19 6v5.4c0 4.4-2.8 7.6-7 9.5-4.2-1.9-7-5.1-7-9.5V6l7-2.8Z"/><path d="m9 12 2 2 4-4"/></svg></span><span className="user-detail-role-option-copy"><strong>{item.name}</strong><small>{item.description || 'Provides access to the workspace and its assigned capabilities.'}</small></span><span className="user-detail-role-option-state">{selected ? 'Selected' : 'Choose role'}</span></label>})}</div>{role && <div className="user-create-auto-note"><span>✦</span><div><strong>{role.name} selected</strong><small>{role.description || 'User ID and Employee ID are generated from the selected role.'}{employeeIdPreview ? ` · Generated ID: ${employeeIdPreview}` : ''}</small></div></div>}</div>
+      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Groups</h2><p>{form.groupIds.length} selected{options.groups.find((group) => String(group.id) === String(form.primaryGroupId)) ? ` · Primary: ${options.groups.find((group) => String(group.id) === String(form.primaryGroupId)).name}` : ' · Choose a primary group with the star'}</p></div></header><div className="user-detail-group-options">{options.groups.map((group, index) => { const selected = form.groupIds.includes(group.id); const primary = String(form.primaryGroupId) === String(group.id); return <div className={`user-detail-group-option${selected ? ' is-selected' : ''}${primary ? ' is-primary' : ''}`} key={group.id}><input aria-label={`Assign ${group.name}`} type="checkbox" checked={selected} onChange={() => toggleGroup(group.id)} /><span className={`group-color group-color-${index % 5}`}>{group.code?.slice(0, 2) || group.name?.slice(0, 2)}</span><span className="user-detail-group-option-copy"><strong>{group.name}</strong><small>{group.code}</small></span><button type="button" className="user-detail-primary-star" aria-label={primary ? `${group.name} is the primary group` : `Make ${group.name} the primary group`} aria-pressed={primary} onClick={() => choosePrimaryGroup(group.id)}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 3.6 2.55 5.17 5.7.83-4.12 4.02.97 5.68L12 16.62l-5.1 2.68.97-5.68-4.12-4.02 5.7-.83L12 3.6Z" /></svg></button></div>})}</div></div>
     </form>
   </section>
+}
+
+function CreateUserField({ label, value = '', placeholder = '', type = 'text', readOnly = false, required = false, onChange }) {
+  return <label className="user-detail-field"><span>{label}{required && <b> *</b>}</span><input type={type} value={value || ''} placeholder={placeholder} readOnly={readOnly} required={required} onChange={(event) => onChange?.(event.target.value)} /></label>
+}
+
+function CreateUserSelect({ label, value = '', options = [], placeholder = 'Select an option', required = false, disabled = false, onChange }) {
+  return <label className="user-detail-field"><span>{label}{required && <b> *</b>}</span><select value={value || ''} required={required} disabled={disabled} onChange={(event) => onChange?.(event.target.value)}><option value="">{placeholder}</option>{options.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
 }
 
 function UserWizard({ isEdit, userId, detail, loading, options, form, update, role, employeeIdPreview, departmentTeams, eligibleManagers, designationCostCenters, activeGroupChoices, step, setStep, error, saving, showPassword, setShowPassword, toggleGroup, validateStep, nextStep, submitUser, onCancel }) {
@@ -447,50 +413,44 @@ function UserWizard({ isEdit, userId, detail, loading, options, form, update, ro
   </section>
 }
 
-function UserDetailView({ detail, ticketData, groupOptions, tab, setTab, loading, error, success, temporaryPassword, saving, deactivateOpen, setDeactivateOpen, deactivateReason, setDeactivateReason, submitDeactivate, lockOpen, setLockOpen, lockReason, setLockReason, submitLock, onManageAccount, onEdit, onSaveGroups, onSaveProfile, onBack, onResetPassword, onCopy }) {
+function UserDetailView({ detail, roles, groups, optionsLoading, loading, error, success, temporaryPassword, saving, deactivateOpen, setDeactivateOpen, deactivateReason, setDeactivateReason, submitDeactivate, lockOpen, setLockOpen, lockReason, setLockReason, submitLock, onManageAccount, onSaveProfile, onBack, onResetPassword, onCopy }) {
   const [editing, setEditing] = useState(true)
   const [accountSecurityOpen, setAccountSecurityOpen] = useState(false)
   const [preferencesOpen, setPreferencesOpen] = useState(false)
   const [rolesOpen, setRolesOpen] = useState(false)
   const [groupsOpen, setGroupsOpen] = useState(false)
   const [profileDraft, setProfileDraft] = useState({ firstName: '', lastName: '', email: '', phone: '' })
-  const [editingGroups, setEditingGroups] = useState(false)
+  const [roleDraft, setRoleDraft] = useState('')
   const [groupDraft, setGroupDraft] = useState([])
   const [primaryGroupDraft, setPrimaryGroupDraft] = useState('')
-  const [groupError, setGroupError] = useState('')
   useEffect(() => {
-    if (detail) setProfileDraft({ firstName: detail.firstName || '', lastName: detail.lastName || '', email: detail.email || '', phone: detail.phone || '' })
+    if (detail) {
+      setProfileDraft({ firstName: detail.firstName || '', lastName: detail.lastName || '', email: detail.email || '', phone: detail.phone || '' })
+      setRoleDraft(String(detail.roles?.[0]?.id || ''))
+      const assignedGroups = (detail.groups || []).map((group) => String(group.id))
+      setGroupDraft(assignedGroups)
+      setPrimaryGroupDraft(String(detail.primaryGroupId || detail.groups?.find((group) => group.primary)?.id || assignedGroups[0] || ''))
+    }
   }, [detail])
   async function saveInline() {
-    if (!profileDraft.firstName.trim() || !profileDraft.lastName.trim() || !/^\S+@\S+\.\S+$/.test(profileDraft.email.trim())) return
-    try { await onSaveProfile(profileDraft); setEditing(false) } catch { /* The parent displays the server validation message. */ }
+    if (!profileDraft.firstName.trim() || !profileDraft.lastName.trim() || !/^\S+@\S+\.\S+$/.test(profileDraft.email.trim()) || !roleDraft || !groupDraft.length || !groupDraft.includes(primaryGroupDraft)) return
+    try { await onSaveProfile(profileDraft, { roleId: roleDraft, groupIds: groupDraft, primaryGroupId: primaryGroupDraft }); setEditing(false) } catch { /* The parent displays the server validation message. */ }
   }
-  function openGroupEditor() {
-    const selected = (detail.groups || []).map((group) => String(group.id))
-    setGroupDraft(selected)
-    setPrimaryGroupDraft(String(detail.primaryGroupId || detail.groups?.find((group) => group.primary)?.id || selected[0] || ''))
-    setGroupError('')
-    setEditingGroups(true)
-  }
-  function toggleGroupDraft(groupId) {
+  function toggleAccessGroup(groupId) {
     const id = String(groupId)
     const next = groupDraft.includes(id) ? groupDraft.filter((item) => item !== id) : [...groupDraft, id]
     setGroupDraft(next)
     if (!next.includes(primaryGroupDraft)) setPrimaryGroupDraft(next[0] || '')
   }
-  async function saveGroupDraft() {
-    if (!groupDraft.length) { setGroupError('Select at least one support group.'); return }
-    if (!groupDraft.includes(primaryGroupDraft)) { setGroupError('Choose a primary group from the selected groups.'); return }
-    setGroupError('')
-    try { await onSaveGroups(groupDraft, primaryGroupDraft); setEditingGroups(false) }
-    catch (reason) { setGroupError(reason.message) }
+  function setPrimaryAccessGroup(groupId) {
+    const id = String(groupId)
+    setGroupDraft((current) => current.includes(id) ? current : [...current, id])
+    setPrimaryGroupDraft(id)
   }
-  const tabs = [['ROLES', 'Roles'], ['GROUPS', `Groups (${detail?.groups?.length || 0})`], ['DELEGATES', 'Delegates'], ['SUBSCRIPTIONS', 'Subscriptions'], ['MANAGE_SUBSCRIPTIONS', 'Manage Subscriptions'], ['PERMISSIONS', 'Permissions'], ['TICKETS', 'Tickets'], ['SECURITY', 'Security'], ['ACTIVITY', 'Activity / audit'], ['ASSETS', 'Assets']]
   if (loading) return <Loader variant="inline" title="Loading user profile" subtitle="Getting the latest account details." />
   if (!detail) return <section className="users-page"><button className="users-back-link" onClick={onBack}>← Back to users</button>{error && <div className="users-alert">{error}</div>}</section>
-  const activeTickets = ticketData?.tickets || []
   return <section className="users-page user-detail-page">
-    <header className="user-record-toolbar user-detail-toolbar"><div className="user-record-heading"><button type="button" onClick={onBack} aria-label="Back to users">‹</button><span className="user-detail-avatar">{(detail.displayName || '?').split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span><div><span className="user-detail-kicker">USER PROFILE</span><strong>{detail.displayName}</strong><small>{detail.username}{detail.department ? ` · ${detail.department}` : ''}</small></div></div><div className="user-record-actions">{editingGroups ? <><button type="button" onClick={() => { setEditingGroups(false); setGroupError('') }} disabled={saving}>Cancel</button><button type="button" onClick={saveGroupDraft} disabled={saving || !groupDraft.length || !groupDraft.includes(primaryGroupDraft)}>{saving ? 'Saving…' : 'Save groups'}</button></> : editing ? <><button type="button" onClick={() => setEditing(false)} disabled={saving}>Cancel</button><button type="button" onClick={saveInline} disabled={saving || !profileDraft.firstName.trim() || !profileDraft.lastName.trim() || !/^\S+@\S+\.\S+$/.test(profileDraft.email.trim())}>{saving ? 'Saving…' : 'Save changes'}</button></> : <button type="button" onClick={() => setEditing(true)}>Edit profile</button>}{detail.active && <button type="button" className="user-record-delete" onClick={() => setDeactivateOpen(true)}>Deactivate</button>}<button type="button" disabled={saving || !detail.active} onClick={onResetPassword}>{saving ? 'Working…' : 'Reset password'}</button></div></header>
+    <header className="user-record-toolbar user-detail-toolbar"><div className="user-record-heading"><button type="button" onClick={onBack} aria-label="Back to users">‹</button><span className="user-detail-avatar">{(detail.displayName || '?').split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span><div><span className="user-detail-kicker">USER PROFILE</span><strong>{detail.displayName}</strong><small>{detail.username}{detail.department ? ` · ${detail.department}` : ''}</small></div></div><div className="user-record-actions">{editing ? <><button type="button" onClick={() => setEditing(false)} disabled={saving}>Cancel</button><button type="button" onClick={saveInline} disabled={saving || optionsLoading || !profileDraft.firstName.trim() || !profileDraft.lastName.trim() || !/^\S+@\S+\.\S+$/.test(profileDraft.email.trim()) || !roleDraft || !groupDraft.length || !groupDraft.includes(primaryGroupDraft)}>{saving ? 'Saving…' : 'Save changes'}</button></> : <button type="button" onClick={() => setEditing(true)}>Edit profile</button>}{detail.active && <button type="button" className="user-record-delete" onClick={() => setDeactivateOpen(true)}>Deactivate</button>}<button type="button" disabled={saving || !detail.active} onClick={onResetPassword}>{saving ? 'Working…' : 'Reset password'}</button></div></header>
     {error && <div className="users-alert" role="alert">{error}</div>}{success && <div className="users-success" role="status">{success}</div>}
     {temporaryPassword && <div className="temporary-password"><div><span>Temporary password</span><code>{temporaryPassword}</code><small>Copy and securely provide it to the user. This value is shown once.</small></div><button onClick={onCopy}>Copy password</button></div>}
     <section className="user-detail-form">
@@ -517,19 +477,9 @@ function UserDetailView({ detail, ticketData, groupOptions, tab, setTab, loading
         <UserDetailField label="Mobile phone" value="Not set" />
         <UserDetailField label="Photo" value="Not set" />
       </div>}</div>
-      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Roles</h2><p>{detail.roles?.length || 0} assigned</p></div><button type="button" className="user-detail-collapse-toggle" aria-expanded={rolesOpen} aria-controls="user-roles-details" onClick={() => setRolesOpen((open) => !open)}><span>{rolesOpen ? 'Hide details' : 'Show details'}</span><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg></button></header>{rolesOpen && <div className="user-detail-assignment-list" id="user-roles-details">{detail.roles?.length ? detail.roles.map((role) => <span className="user-detail-assignment-chip" key={role.id}>{role.name}</span>) : <p className="user-detail-empty">No roles are assigned to this user.</p>}</div>}</div>
-      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Groups</h2><p>{detail.groups?.length || 0} assigned{detail.groups?.some((group) => group.primary) ? ` · Primary: ${detail.groups.find((group) => group.primary).name}` : ''}</p></div><button type="button" className="user-detail-collapse-toggle" aria-expanded={groupsOpen} aria-controls="user-groups-details" onClick={() => setGroupsOpen((open) => !open)}><span>{groupsOpen ? 'Hide details' : 'Show details'}</span><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg></button></header>{groupsOpen && <div className="user-detail-assignment-list" id="user-groups-details">{detail.groups?.length ? detail.groups.map((group) => <span className="user-detail-assignment-chip user-detail-group-chip" key={group.id}><strong>{group.name}</strong><small>{group.code}{group.primary ? ' · Primary group' : ''}</small></span>) : <p className="user-detail-empty">No groups are assigned to this user.</p>}</div>}</div>
+      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Roles</h2><p>{detail.roles?.length || 0} assigned</p></div><button type="button" className="user-detail-collapse-toggle" aria-expanded={rolesOpen} aria-controls="user-roles-details" onClick={() => setRolesOpen((open) => !open)}><span>{rolesOpen ? 'Hide details' : 'Show details'}</span><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg></button></header>{rolesOpen && <div className="user-detail-access-editor user-detail-role-editor" id="user-roles-details"><div className="user-detail-role-options" role="radiogroup" aria-label="Choose primary role">{roles.map((role, index) => { const selected = String(role.id) === roleDraft; return <label className={`user-detail-role-option${selected ? ' is-selected' : ''}`} key={role.id}><input type="radio" name="primary-user-role" value={role.id} checked={selected} onChange={() => setRoleDraft(String(role.id))} /><span className={`user-detail-role-option-icon role-color-${index % 5}`}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3.2 19 6v5.4c0 4.4-2.8 7.6-7 9.5-4.2-1.9-7-5.1-7-9.5V6l7-2.8Z"/><path d="m9 12 2 2 4-4"/></svg></span><span className="user-detail-role-option-copy"><strong>{role.name}</strong><small>{role.description || 'Provides access to the workspace and its assigned capabilities.'}</small></span><span className="user-detail-role-option-state">{selected ? 'Selected' : 'Choose role'}</span></label>})}</div></div>}</div>
+      <div className="user-detail-section"><header><span className="user-detail-section-marker"/><div><h2>Groups</h2><p>{groupDraft.length} selected{groups.find((group) => String(group.id) === primaryGroupDraft) ? ` · Primary: ${groups.find((group) => String(group.id) === primaryGroupDraft).name}` : ''}</p></div><button type="button" className="user-detail-collapse-toggle" aria-expanded={groupsOpen} aria-controls="user-groups-details" onClick={() => setGroupsOpen((open) => !open)}><span>{groupsOpen ? 'Hide details' : 'Show details'}</span><svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 7.5 5 5 5-5" /></svg></button></header>{groupsOpen && <div className="user-detail-access-editor" id="user-groups-details">{optionsLoading ? <p className="user-detail-empty">Loading available groups…</p> : groups.length ? <div className="user-detail-group-options">{groups.map((group, index) => { const selected = groupDraft.includes(String(group.id)); const primary = primaryGroupDraft === String(group.id); return <div className={`user-detail-group-option${selected ? ' is-selected' : ''}${primary ? ' is-primary' : ''}`} key={group.id}><input aria-label={`Assign ${group.name}`} type="checkbox" checked={selected} onChange={() => toggleAccessGroup(group.id)} /><span className={`group-color group-color-${index % 5}`}>{group.code?.slice(0, 2) || group.name?.slice(0, 2)}</span><span className="user-detail-group-option-copy"><strong>{group.name}</strong><small>{group.code}</small></span><button type="button" className="user-detail-primary-star" aria-label={primary ? `${group.name} is the primary group` : `Make ${group.name} the primary group`} aria-pressed={primary} onClick={() => setPrimaryAccessGroup(group.id)}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3z" /></svg></button></div> })}</div> : <p className="user-detail-empty">No support groups are available.</p>}</div>}</div>
     </section>
-    <section className="user-related-links"><h2>Related Links</h2><button type="button" onClick={() => setTab('SUBSCRIPTIONS')}>View Subscriptions</button><button type="button" disabled={saving || !detail.active} onClick={onResetPassword}>Reset a password</button><button type="button" onClick={onEdit}>Edit full profile, role &amp; groups</button></section>
-    <div className="user-record-tabs" role="tablist">{tabs.map(([key, label]) => <button role="tab" aria-selected={tab === key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)} key={key}>{label}</button>)}</div>
-    {tab === 'ROLES' && <section className="user-record-list"><header><strong>☷ &nbsp; Roles</strong><button type="button" onClick={onEdit}>Edit…</button><label>Go to<select disabled><option>Role</option></select></label><input aria-label="Search roles" placeholder="Search" disabled /></header><div className="user-record-table-wrap"><table><thead><tr><th>Role</th><th>State</th><th>Inherited</th><th>Inheritance Count</th></tr></thead><tbody>{detail.roles?.map((item) => <tr key={item.id}><td><span className="record-info-icon">i</span><strong>{item.name}</strong></td><td><span className="record-active-link">Active</span></td><td>false</td><td>0</td></tr>)}{!detail.roles?.length && <tr><td colSpan="4">No roles are assigned.</td></tr>}</tbody></table></div></section>}
-    {tab === 'GROUPS' && <section className="user-record-list"><header><strong>☷ &nbsp; Groups</strong><button type="button" onClick={openGroupEditor} disabled={editingGroups}>{editingGroups ? 'Editing' : 'Edit…'}</button><label>Go to<select disabled><option>Group</option></select></label><input aria-label="Search groups" placeholder="Search" disabled /></header><div className="user-record-table-wrap"><table><thead><tr><th>Group</th><th>Group ID</th><th>Primary</th><th>State</th></tr></thead><tbody>{detail.groups?.map((group) => <tr key={group.id}><td><span className="record-info-icon">i</span><strong>{group.name}</strong></td><td>{group.code}</td><td>{group.primary ? 'true' : 'false'}</td><td><span className="record-active-link">Active</span></td></tr>)}{!detail.groups?.length && <tr><td colSpan="4">No groups are assigned.</td></tr>}</tbody></table></div>{editingGroups && <section className="user-profile-group-editor"><div className="user-create-section-title"><span>✎</span><div><strong>Edit group membership</strong><small>Update groups assigned to {detail.displayName} and choose their primary group</small></div></div>{groupError && <div className="users-alert group-editor-alert" role="alert">{groupError}</div>}<div className="user-create-group-grid">{groupOptions.map((group, index) => <label className={`user-create-group${groupDraft.includes(String(group.id)) ? ' selected' : ''}`} key={group.id}><input type="checkbox" checked={groupDraft.includes(String(group.id))} onChange={() => toggleGroupDraft(group.id)} /><span className={`group-color group-color-${index % 5}`}>{group.code?.slice(0, 2)}</span><span><strong>{group.name}</strong><small>{group.code}</small></span></label>)}</div>{!groupOptions.length && <div className="users-state">Loading available support groups…</div>}<div className="user-create-primary-group"><RecordField label="Primary group" value={primaryGroupDraft} options={groupOptions.filter((group) => groupDraft.includes(String(group.id))).map((group) => ({ value: group.id, label: group.name }))} placeholder="Choose primary group" editable={groupDraft.length > 0} required onChange={setPrimaryGroupDraft} /></div></section>}</section>}
-    {['DELEGATES', 'SUBSCRIPTIONS', 'MANAGE_SUBSCRIPTIONS'].includes(tab) && <section className="user-record-list user-record-empty"><h2>{tabs.find(([key]) => key === tab)?.[1]}</h2><p>This feature is not configured for this account yet.</p></section>}
-    {tab === 'PERMISSIONS' && <section className="user-info-card permissions-card"><div className="info-card-heading"><span className="info-card-icon icon-violet">P</span><div><h2>Calculated permissions</h2><p>Permissions come from the assigned role. They are not individually overridden here.</p></div></div><div className="permission-pills">{detail.permissions?.map((permission) => <span key={permission}><b>✓</b>{nice(permission)}</span>)}</div><div className="permission-source">Permission source: <strong>Role → {detail.roles?.[0]?.name || 'None assigned'}</strong></div></section>}
-    {tab === 'TICKETS' && <section className="user-info-card user-tickets-card"><div className="info-card-heading"><span className="info-card-icon icon-blue">T</span><div><h2>Assigned tickets</h2><p>Work currently assigned directly to this user.</p></div><span className="ticket-assigned-count">{ticketData?.tickets?.length ?? '—'} total</span></div><div className="mini-status-counts">{Object.entries(ticketData?.statusCounts || {}).map(([status, count]) => <span key={status}><b>{count}</b>{nice(status)}</span>)}</div><div className="users-table-wrap"><table className="users-table user-ticket-table"><thead><tr><th>Number</th><th>Type</th><th>Subject</th><th>Priority</th><th>Status</th><th>Group</th><th>Created</th><th>Updated</th></tr></thead><tbody>{activeTickets.map((ticket) => <tr key={`${ticket.type}:${ticket.id}`}><td><strong className="users-code">{ticket.number}</strong></td><td>{nice(ticket.type)}</td><td>{ticket.subject}</td><td>{ticket.priority}</td><td><span className="users-status is-active">{nice(ticket.status)}</span></td><td>{ticket.assignedGroup || '—'}</td><td>{dateText(ticket.createdAt)}</td><td>{dateText(ticket.updatedAt)}</td></tr>)}{ticketData && !activeTickets.length && <tr><td colSpan="8"><div className="users-state">No tickets are assigned directly to this user.</div></td></tr>}</tbody></table></div></section>}
-    {tab === 'SECURITY' && <div className="user-detail-grid"><InfoCard title="Security" tone="amber"><Info label="Authentication" value="Local authentication" /><Info label="Account access" value={detail.locked ? 'Locked' : detail.active ? 'Enabled' : 'Inactive'} /><Info label="Lock reason" value={detail.lockReason} /><Info label="MFA" value={detail.mfaRequired ? 'Required (provider unavailable)' : 'Not required'} /><Info label="Password status" value={detail.mustChangePassword ? 'Change required at next login' : 'Active'} /><Info label="Last password change" value={dateText(detail.passwordChangedAt)} /><Info label="Last login" value={dateText(detail.lastLoginAt)} /></InfoCard><InfoCard title="Session controls" tone="blue"><p className="security-card-copy">Password resets revoke active sessions. Account locks block sign-in until an administrator unlocks the account.</p><div className="security-actions"><button className="users-secondary-button" disabled={saving || !detail.active} onClick={onResetPassword}>Reset password</button>{detail.locked ? <button className="users-secondary-button" disabled={saving} onClick={() => onManageAccount('unlock')}>Unlock account</button> : <button className="users-danger-button" disabled={saving || !detail.active} onClick={() => setLockOpen(true)}>Lock account</button>}{!detail.mustChangePassword && <button className="users-secondary-button" disabled={saving || !detail.active || detail.locked} onClick={() => onManageAccount('force-password-change', 'Require this user to change their password at the next sign-in?')}>Force password change</button>}</div></InfoCard></div>}
-    {tab === 'ACTIVITY' && <section className="user-info-card"><div className="info-card-heading"><span className="info-card-icon icon-teal">A</span><div><h2>Activity & audit</h2><p>Account changes and sign-in events are recorded here.</p></div></div><div className="user-audit-list">{detail.activity?.map((item) => <article key={item.id}><span className={`audit-mark audit-${item.event.toLowerCase()}`} /><div><strong>{nice(item.event)}</strong><p>{item.details}</p><small>{item.actor} · {dateText(item.createdAt)}</small></div></article>)}{!detail.activity?.length && <div className="users-state">No audit activity recorded.</div>}</div></section>}
-    {tab === 'ASSETS' && <div className="user-info-card assets-placeholder"><span className="assets-placeholder-mark">A</span><h2>Asset register is not configured yet</h2><p>Assigned devices will appear here when the Asset Management module is available.</p></div>}
     {deactivateOpen && <div className="user-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setDeactivateOpen(false) }}><form className="user-modal" onSubmit={submitDeactivate}><button className="modal-close" type="button" onClick={() => setDeactivateOpen(false)}>×</button><span className="users-kicker">ACCOUNT STATUS</span><h2>Deactivate {detail.displayName}?</h2><p>Existing tickets and audit history remain. Active assignments must be reassigned or closed first.</p><label>Reason *<textarea minLength="5" maxLength="500" required value={deactivateReason} onChange={(event) => setDeactivateReason(event.target.value)} /></label><footer><button className="users-secondary-button" type="button" onClick={() => setDeactivateOpen(false)}>Cancel</button><button className="users-danger-button" disabled={saving || deactivateReason.trim().length < 5}>{saving ? 'Deactivating…' : 'Deactivate user'}</button></footer></form></div>}
     {lockOpen && <div className="user-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setLockOpen(false) }}><form className="user-modal" onSubmit={submitLock}><button className="modal-close" type="button" onClick={() => setLockOpen(false)}>×</button><span className="users-kicker">SECURITY CONTROL</span><h2>Lock {detail.displayName}?</h2><p>The user will be blocked from signing in and all active sessions will end. You can unlock the account later.</p><label>Reason *<textarea minLength="5" maxLength="500" required value={lockReason} onChange={(event) => setLockReason(event.target.value)} /></label><footer><button className="users-secondary-button" type="button" onClick={() => setLockOpen(false)}>Cancel</button><button className="users-danger-button" disabled={saving || lockReason.trim().length < 5}>{saving ? 'Locking…' : 'Lock account'}</button></footer></form></div>}
   </section>

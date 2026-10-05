@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import './CmdbDashboardPage.css'
+import './CmdbDashboardCharts.css'
 
 async function responseBody(response) {
   const body = await response.json().catch(() => null)
@@ -48,6 +49,112 @@ function BarList({ title, description, items, toFilter, emptyText }) {
   </section>
 }
 
+const chartColors = ['#3f98bd', '#35a48f', '#8a72c4', '#e4a34c', '#de6d72', '#5b82bf', '#80aa62', '#bd78a8', '#48a7ae', '#788796', '#c18553', '#6887a8', '#5a9b78']
+
+function PieChart({ items, toFilter }) {
+  const total = items.reduce((sum, item) => sum + item.count, 0)
+  let angle = -90
+  const slices = items.map((item, index) => {
+    const start = angle
+    angle += total ? item.count / total * 360 : 0
+    const startRadians = start * Math.PI / 180
+    const endRadians = angle * Math.PI / 180
+    const largeArc = angle - start > 180 ? 1 : 0
+    const path = total
+      ? `M 100 100 L ${100 + 82 * Math.cos(startRadians)} ${100 + 82 * Math.sin(startRadians)} A 82 82 0 ${largeArc} 1 ${100 + 82 * Math.cos(endRadians)} ${100 + 82 * Math.sin(endRadians)} Z`
+      : ''
+    return { ...item, path, fullCircle: items.length === 1, color: chartColors[index % chartColors.length] }
+  })
+
+  return <section className="cmdb-panel cmdb-chart-panel cmdb-pie-panel">
+    <header className="cmdb-panel-heading"><div><h2>CIs by class</h2><p>Configuration item distribution</p></div><span className="cmdb-panel-mark" aria-hidden="true">◔</span></header>
+    {total ? <div className="cmdb-pie-content">
+      <svg className="cmdb-pie-svg" viewBox="0 0 200 200" role="img" aria-label={`Pie chart showing ${total} configuration items across ${items.length} classes`}>
+        <title>Configuration items by class</title>
+        {slices.map((slice) => slice.fullCircle
+          ? <circle key={slice.label} cx="100" cy="100" r="82" fill={slice.color}><title>{slice.label}: {slice.count} (100%)</title></circle>
+          : <path key={slice.label} d={slice.path} fill={slice.color}><title>{slice.label}: {slice.count} ({Math.round(slice.count / total * 100)}%)</title></path>)}
+      </svg>
+      <div className="cmdb-pie-legend">{slices.map((slice) => <Link key={slice.label} to={toFilter(slice)} className="cmdb-pie-legend-item"><i style={{ background: slice.color }} /><span title={slice.label}>{slice.label}</span><strong>{slice.count}</strong></Link>)}</div>
+    </div> : <p className="cmdb-empty-chart">No CI class data available.</p>}
+  </section>
+}
+
+function LineChart({ items }) {
+  const width = 600
+  const height = 225
+  const left = 38
+  const right = 14
+  const top = 15
+  const bottom = 38
+  const chartWidth = width - left - right
+  const chartHeight = height - top - bottom
+  const maximum = Math.max(1, ...items.map((item) => item.count))
+  const points = items.map((item, index) => ({
+    ...item,
+    x: left + (items.length > 1 ? index / (items.length - 1) : 0.5) * chartWidth,
+    y: top + chartHeight - item.count / maximum * chartHeight,
+  }))
+  const path = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ')
+  const grid = Array.from({ length: 4 }, (_, index) => {
+    const value = Math.ceil(maximum * (3 - index) / 3)
+    const y = top + chartHeight * index / 3
+    return { value, y }
+  })
+
+  return <section className="cmdb-panel cmdb-chart-panel cmdb-line-panel">
+    <header className="cmdb-panel-heading"><div><h2>CI creation trend</h2><p>New configuration items created each month · last 12 months</p></div><span className="cmdb-panel-mark" aria-hidden="true">⌁</span></header>
+    {items.some((item) => item.count > 0) ? <div className="cmdb-line-chart-wrap"><svg className="cmdb-line-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Line chart of configuration items created per month">
+      <title>Monthly CI creation trend</title>
+      {grid.map((line, index) => <g key={`${line.y}-${index}`}><line x1={left} x2={width - right} y1={line.y} y2={line.y} className="cmdb-chart-gridline"/><text x={left - 9} y={line.y + 3} textAnchor="end" className="cmdb-chart-axis-label">{line.value}</text></g>)}
+      <path d={path} className="cmdb-line-path" />
+      {points.map((point) => <g key={point.label}><circle cx={point.x} cy={point.y} r="3.5" className="cmdb-line-point"><title>{point.label}: {point.count} new CIs</title></circle><text x={point.x} y={height - 12} textAnchor="middle" className="cmdb-chart-axis-label">{point.label}</text></g>)}
+    </svg></div> : <p className="cmdb-empty-chart">No CI creation history is available for this period.</p>}
+  </section>
+}
+
+function ComboChart({ items }) {
+  const width = 600
+  const height = 260
+  const left = 38
+  const right = 16
+  const top = 16
+  const bottom = 52
+  const plotWidth = width - left - right
+  const plotHeight = height - top - bottom
+  const maximum = Math.max(1, ...items.map((item) => item.count))
+  const step = items.length ? plotWidth / items.length : plotWidth
+  const barWidth = Math.min(38, step * 0.48)
+  const points = items.map((item, index) => ({
+    ...item,
+    x: left + index * step + step / 2,
+    y: top + plotHeight - item.critical / maximum * plotHeight,
+  }))
+  const path = points.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ')
+  const grid = Array.from({ length: 4 }, (_, index) => ({
+    value: Math.ceil(maximum * (3 - index) / 3),
+    y: top + plotHeight * index / 3,
+  }))
+
+  return <section className="cmdb-panel cmdb-chart-panel cmdb-combo-panel">
+    <header className="cmdb-panel-heading"><div><h2>Environment & critical CIs</h2><p>Total CIs by environment with critical items highlighted</p></div><span className="cmdb-panel-mark" aria-hidden="true">▥</span></header>
+    {items.length ? <>
+      <div className="cmdb-chart-legend"><span><i className="cmdb-legend-bar"/>Total CIs</span><span><i className="cmdb-legend-line"/>Critical CIs</span></div>
+      <div className="cmdb-combo-chart-wrap"><svg className="cmdb-combo-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Combo chart comparing total and critical configuration items by environment">
+        <title>Total and critical CIs by environment</title>
+        {grid.map((line, index) => <g key={`${line.y}-${index}`}><line x1={left} x2={width - right} y1={line.y} y2={line.y} className="cmdb-chart-gridline"/><text x={left - 9} y={line.y + 3} textAnchor="end" className="cmdb-chart-axis-label">{line.value}</text></g>)}
+        {items.map((item, index) => {
+          const x = left + index * step + (step - barWidth) / 2
+          const barHeight = item.count / maximum * plotHeight
+          return <g key={item.label}><rect x={x} y={top + plotHeight - barHeight} width={barWidth} height={barHeight} rx="4" className="cmdb-combo-bar"><title>{item.label}: {item.count} total CIs</title></rect><text x={left + index * step + step / 2} y={height - 27} textAnchor="middle" className="cmdb-chart-category-label">{item.label}</text></g>
+        })}
+        <path d={path} className="cmdb-combo-line" />
+        {points.map((point) => <circle key={point.label} cx={point.x} cy={point.y} r="4" className="cmdb-combo-point"><title>{point.label}: {point.critical} critical CIs</title></circle>)}
+      </svg></div>
+    </> : <p className="cmdb-empty-chart">No environment data available.</p>}
+  </section>
+}
+
 export default function CmdbDashboardPage() {
   const navigate = useNavigate()
   const [records, setRecords] = useState([])
@@ -80,6 +187,25 @@ export default function CmdbDashboardPage() {
 
   const byClass = useMemo(() => aggregate(filteredRecords, (record) => record.applicationCategory || 'Unclassified'), [filteredRecords])
   const byEnvironment = useMemo(() => aggregate(filteredRecords, (record) => record.environment || 'Unassigned'), [filteredRecords])
+  const environmentChart = useMemo(() => byEnvironment.map((item) => ({
+    ...item,
+    critical: filteredRecords.filter((record) => (record.environment || 'Unassigned') === item.label && record.businessCriticality?.toLowerCase() === 'critical').length,
+  })), [byEnvironment, filteredRecords])
+  const monthlyTrend = useMemo(() => {
+    const currentMonth = new Date()
+    currentMonth.setDate(1)
+    currentMonth.setHours(0, 0, 0, 0)
+    const months = Array.from({ length: 12 }, (_, index) => {
+      const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 11 + index, 1)
+      return { start, next: new Date(start.getFullYear(), start.getMonth() + 1, 1), label: start.toLocaleDateString([], { month: 'short' }), count: 0 }
+    })
+    filteredRecords.forEach((record) => {
+      const created = recordDate(record)
+      const month = months.find((item) => created && created >= item.start && created < item.next)
+      if (month) month.count += 1
+    })
+    return months
+  }, [filteredRecords])
   const byService = useMemo(() => {
     const counts = new Map()
     filteredRecords.forEach((record) => {
@@ -91,7 +217,7 @@ export default function CmdbDashboardPage() {
 
   const healthItems = useMemo(() => {
     const missingOwners = filteredRecords.filter((record) => !record.applicationOwner).length
-    const missingRelations = filteredRecords.filter((record) => !(readDetails(record).relationships || []).some((relation) => relation.relatedCi)).length
+    const missingRelations = filteredRecords.filter((record) => !(Number(record.relationshipCount || 0) > 0) && !(readDetails(record).relationships || []).some((relation) => relation.relatedCi)).length
     const duplicateNames = new Set([...new Set(filteredRecords.map((record) => record.applicationName?.trim().toLowerCase()).filter(Boolean))].filter((name) => filteredRecords.filter((record) => record.applicationName?.trim().toLowerCase() === name).length > 1))
     const identityGaps = filteredRecords.filter((record) => ['Server', 'Database', 'Network Device'].includes(record.applicationCategory)).filter((record) => { const detail = readDetails(record); return !detail.hostname && !detail.assetTag && !detail.serialNumber }).length
     return [
@@ -115,7 +241,7 @@ export default function CmdbDashboardPage() {
 
   return <section className="cmdb-dashboard" aria-labelledby="cmdb-dashboard-title">
     <header className="cmdb-dashboard-heading">
-      <div><span className="cmdb-eyebrow">CONFIGURATION MANAGEMENT</span><h1 id="cmdb-dashboard-title">CMDB Dashboard</h1><p>Operational visibility across your configuration items and service estate.</p></div>
+      <div><h1 id="cmdb-dashboard-title">CMDB Dashboard</h1><p>Operational visibility across your configuration items and service estate.</p></div>
       <div className="cmdb-header-actions"><span className="cmdb-refreshed">{lastRefreshed ? `Updated ${lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Live CMDB data'}</span><button type="button" onClick={() => loadRecords(true)} disabled={refreshing} aria-label="Refresh dashboard">{refreshing ? 'Refreshing…' : '↻ Refresh'}</button><button type="button" onClick={exportCsv} disabled={!filteredRecords.length}>↓ Export</button></div>
     </header>
 
@@ -130,8 +256,9 @@ export default function CmdbDashboardPage() {
       </section>
 
       <div className="cmdb-analytics-grid">
-        <BarList title="CIs by class" description="Configuration item distribution" items={byClass} toFilter={(item) => viewCis({ class: item.label })} emptyText="No CI class data available." />
-        <BarList title="CIs by environment" description="Where your estate is deployed" items={byEnvironment} toFilter={(item) => viewCis({ environment: item.label })} emptyText="No environment data available." />
+        <PieChart items={byClass} toFilter={(item) => viewCis({ class: item.label })} />
+        <LineChart items={monthlyTrend} />
+        <ComboChart items={environmentChart} />
         <BarList title="CIs by business service" description="Items linked to business services" items={byService} toFilter={(item) => item.label === 'No linked business service' ? viewCis({ quality: 'relationships-empty' }) : viewCis({ service: item.label })} emptyText="No business service data available." />
         <section className="cmdb-panel cmdb-health-panel">
           <header className="cmdb-panel-heading"><div><h2>CMDB health</h2><p>Data quality checks for your estate</p></div><span className="cmdb-health-score">{healthItems.reduce((sum, item) => sum + item.count, 0)} <small>findings</small></span></header>
@@ -153,5 +280,5 @@ export default function CmdbDashboardPage() {
 function aggregate(records, getLabel) {
   const counts = new Map()
   records.forEach((record) => { const label = getLabel(record); counts.set(label, (counts.get(label) || 0) + 1) })
-  return [...counts].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count).slice(0, 7)
+  return [...counts].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count)
 }

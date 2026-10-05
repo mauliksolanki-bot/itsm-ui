@@ -1,0 +1,74 @@
+.cmdb-admin-page { max-width: 1760px; }
+.cmdb-admin-workspace { overflow: hidden; border: 1px solid #d9e6ed; border-radius: 14px; background: #fff; box-shadow: 0 9px 28px #1e3e520d; }
+.cmdb-admin-tabs { display: flex; gap: 3px; overflow-x: auto; padding: 8px 10px 0; border-bottom: 1px solid #dfe9ee; background: linear-gradient(120deg,#fbfdff,#f2f8fa); }
+.cmdb-admin-tabs button { position: relative; display: inline-flex; flex: none; align-items: center; gap: 7px; min-height: 43px; padding: 0 13px; border: 0; border-radius: 9px 9px 0 0; color: #607b8c; background: transparent; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.cmdb-admin-tabs button:hover { color: #267b8c; background: #eaf5f5; }
+.cmdb-admin-tabs button.is-active { color: #147f8c; background: #fff; box-shadow: inset 0 -2px #258f97; }
+.cmdb-admin-tabs button i { display: grid; width: 23px; height: 23px; place-items: center; border-radius: 7px; color: #278895; background: #e9f5f5; font-size: 14px; font-style: normal; }
+.cmdb-admin-content { display: grid; gap: 13px; padding: 18px; }
+.cmdb-admin-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.cmdb-admin-heading h2,.cmdb-admin-heading h3 { margin: 0; color: #294a60; font-size: 16px; letter-spacing: -.01em; }
+.cmdb-admin-heading p { margin: 5px 0 0; color: #7b909e; font-size: 11px; }
+.cmdb-admin-heading .ci-primary-button { display: inline-flex; min-height: 35px; align-items: center; padding: 0 13px; border: 1px solid #2b8196; border-radius: 8px; color: #fff; background: linear-gradient(110deg,#347fbd,#258e89); box-shadow: 0 5px 12px #347fbd20; font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; white-space: nowrap; }
+.cmdb-admin-heading .ci-primary-button:disabled { opacity: .55; cursor: not-allowed; }
+.cmdb-admin-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid #e4edf1; border-radius: 9px; background: #f9fbfc; color: #8195a2; font-size: 10px; }
+.cmdb-admin-search { position: relative; display: flex; width: min(470px,100%); align-items: center; }
+.cmdb-admin-search span { position: absolute; left: 11px; color: #7894a3; font-size: 19px; line-height: 1; }
+.cmdb-admin-search input { width: 100%; height: 35px; padding: 0 10px 0 34px; border: 1px solid #d7e4ea; border-radius: 8px; outline: 0; color: #36556a; background: #fff; font: inherit; font-size: 11px; }
+.cmdb-admin-search input:focus,.cmdb-admin-field input:focus,.cmdb-admin-field select:focus,.cmdb-admin-field textarea:focus { border-color: #59a4ac; box-shadow: 0 0 0 3px #258f9718; }
+.cmdb-admin-table-wrap { width: 100%; overflow: auto; border: 1px solid #e1eaf0; border-radius: 9px; }
+.cmdb-admin-table { width: 100%; min-width: 740px; border-collapse: separate; border-spacing: 0; text-align: left; }
+.cmdb-admin-table th { padding: 11px 12px; border-bottom: 1px solid #dfe8ed; color: #647e8f; background: #f6f9fa; font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.cmdb-admin-table td { max-width: 260px; padding: 11px 12px; border-bottom: 1px solid #edf2f5; color: #587487; font-size: 10px; vertical-align: middle; }
+.cmdb-admin-table tbody tr:last-child td { border-bottom: 0; }
+.cmdb-admin-table td strong { display: block; color: #365970; font-size: 11px; }
+.cmdb-admin-table td small { display: block; max-width: 280px; overflow: hidden; margin-top: 4px; color: #889aa6; text-overflow: ellipsis; white-space: nowrap; }
+.cmdb-admin-table code { padding: 4px 7px; border: 1px solid #dce8ef; border-radius: 6px; color: #39738c; background: #f2f8fb; font-size: 9px; }
+.cmdb-admin-status { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border: 1px solid #e1e8ec; border-radius: 99px; color: #788d99; background: #f6f8f9; font-size: 9px; font-weight: 750; }
+.cmdb-admin-status i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.cmdb-admin-status.is-active { border-color: #cbe9db; color: #278159; background: #eff9f3; }
+.cmdb-admin-link { margin-right: 8px; padding: 4px 5px; border: 0; border-radius: 5px; color: #287e91; background: transparent; font: inherit; font-size: 10px; font-weight: 750; cursor: pointer; }
+.cmdb-admin-link:hover { color: #16596c; background: #edf7f8; }
+.cmdb-admin-editor { display: grid; gap: 14px; padding: 16px; border: 1px solid #d6e5ec; border-top: 3px solid #328b99; border-radius: 10px; background: linear-gradient(125deg,#fbfdff,#f5fafb); box-shadow: 0 6px 17px #203d5308; }
+.cmdb-admin-editor h3 { margin: 0; color: #2c526a; font-size: 13px; }
+.cmdb-admin-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: end; gap: 13px 18px; }
+.cmdb-admin-field { display: grid; min-width: 0; gap: 6px; color: #516f82; font-size: 10px; font-weight: 750; }
+.cmdb-admin-field.is-wide { grid-column: 1 / -1; }
+.cmdb-admin-field input,.cmdb-admin-field select,.cmdb-admin-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 36px; padding: 7px 10px; border: 1px solid #d3e1e8; border-radius: 7px; outline: 0; color: #36556a; background: #fff; font: inherit; font-size: 11px; font-weight: 500; }
+.cmdb-admin-field textarea { resize: vertical; }
+.cmdb-admin-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; color: #516f82; font-size: 10px; font-weight: 700; }
+.cmdb-admin-toggle input { width: 15px; height: 15px; accent-color: #218b91; }
+.cmdb-admin-editor-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; padding-top: 11px; border-top: 1px solid #e2ebef; }
+.cmdb-admin-editor-actions button,.cmdb-admin-choice-form > button { min-height: 33px; padding: 0 12px; border: 1px solid #d5e3e9; border-radius: 7px; color: #5e7889; background: #fff; font: inherit; font-size: 10px; font-weight: 750; cursor: pointer; }
+.cmdb-admin-editor-actions .ci-primary-button,.cmdb-admin-choice-form .ci-primary-button { border-color: #2b8196; color: #fff; background: linear-gradient(110deg,#347fbd,#258e89); }
+.cmdb-admin-editor-actions span { flex: 1; color: #8295a1; font-size: 10px; }
+.cmdb-admin-class-picker { display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; padding: 12px 14px; border: 1px solid #dfebef; border-radius: 9px; background: linear-gradient(110deg,#f8fbfd,#f1f8f8); }
+.cmdb-admin-class-picker .cmdb-admin-field { width: min(400px,75%); }
+.cmdb-admin-class-picker > span { padding-bottom: 9px; color: #8094a1; font-size: 10px; }
+.cmdb-admin-state { display: flex; min-height: 125px; align-items: center; justify-content: center; gap: 9px; color: #8295a1; font-size: 11px; }
+.cmdb-admin-state.has-error,.cmdb-admin-alert { color: #a54945; }
+.cmdb-admin-spinner { width: 16px; height: 16px; border: 2px solid #dce9ed; border-top-color: #338e99; border-radius: 50%; animation: cmdb-admin-spin .8s linear infinite; }
+@keyframes cmdb-admin-spin { to { transform: rotate(360deg); } }
+.cmdb-admin-alert,.cmdb-admin-notice { padding: 10px 12px; border: 1px solid #f0d8d5; border-radius: 8px; background: #fff7f6; font-size: 11px; }
+.cmdb-admin-notice { border-color: #d0eadd; color: #327d5b; background: #f1faf5; }
+.cmdb-admin-choice-layout { display: grid; grid-template-columns: minmax(220px,.7fr) minmax(0,1.6fr); gap: 15px; }
+.cmdb-admin-list-column,.cmdb-admin-values-column { min-width: 0; overflow: hidden; border: 1px solid #e1eaf0; border-radius: 10px; background: #fff; }
+.cmdb-admin-list-column .cmdb-admin-toolbar { border: 0; border-bottom: 1px solid #e7eef2; border-radius: 0; }
+.cmdb-admin-list-cards { display: grid; gap: 4px; padding: 7px; }
+.cmdb-admin-list-cards button { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; border: 1px solid transparent; border-radius: 8px; color: #557285; background: #fff; cursor: pointer; text-align: left; }
+.cmdb-admin-list-cards button:hover { background: #f7fbfc; }
+.cmdb-admin-list-cards button.is-selected { border-color: #cde3e7; color: #257987; background: #eff8f8; }
+.cmdb-admin-list-cards button span { display: grid; gap: 4px; min-width: 0; }
+.cmdb-admin-list-cards strong { color: #365970; font-size: 10px; }
+.cmdb-admin-list-cards small,.cmdb-admin-list-cards em { color: #8699a5; font-size: 9px; font-style: normal; }
+.cmdb-admin-values-column { display: grid; align-content: start; gap: 12px; padding: 14px; }
+.cmdb-admin-values-column > .cmdb-admin-heading { padding-bottom: 11px; border-bottom: 1px solid #e8eef2; }
+.cmdb-admin-values-column .cmdb-admin-table { min-width: 490px; }
+.cmdb-admin-choice-form { display: grid; grid-template-columns: minmax(90px,.85fr) minmax(100px,1fr) 75px auto; align-items: end; gap: 8px; }
+.cmdb-admin-choice-form .cmdb-admin-field { gap: 4px; font-size: 9px; }
+.cmdb-admin-choice-form .cmdb-admin-field input { height: 33px; min-height: 33px; padding: 5px 8px; font-size: 10px; }
+.cmdb-admin-settings-form { display: grid; gap: 14px; }
+.cmdb-admin-settings-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.cmdb-admin-settings-grid .cmdb-admin-field { align-content: start; padding: 13px; border: 1px solid #e0eaf0; border-radius: 9px; background: linear-gradient(130deg,#fff,#f9fbfc); text-transform: capitalize; }
+.cmdb-admin-setting-description { min-height: 28px; color: #8295a2; font-size: 9px; font-weight: 450; line-height: 1.45; text-transform: none; }
+@media(max-width:760px) { .cmdb-admin-content { padding: 12px; }.cmdb-admin-form-grid,.cmdb-admin-settings-grid { grid-template-columns: 1fr; }.cmdb-admin-choice-layout { grid-template-columns: 1fr; }.cmdb-admin-choice-form { grid-template-columns: 1fr 1fr; }.cmdb-admin-class-picker { align-items: stretch; flex-direction: column; }.cmdb-admin-class-picker .cmdb-admin-field { width: 100%; }.cmdb-admin-class-picker > span { padding: 0; }.cmdb-admin-heading { align-items: flex-start; }.cmdb-admin-heading .ci-primary-button { padding: 0 9px; }.cmdb-admin-toolbar { align-items: stretch; flex-direction: column; }.cmdb-admin-search { width: 100%; } }

@@ -1,0 +1,30 @@
+.cmdb-chart-panel{min-height:286px}
+.cmdb-pie-content{display:grid;grid-template-columns:minmax(150px, .9fr) minmax(150px,1.1fr);align-items:center;gap:12px;min-height:205px}
+.cmdb-pie-svg{display:block;width:min(100%,220px);max-height:220px;margin:auto;overflow:visible}
+.cmdb-pie-svg path{stroke:#fff;stroke-width:1.5;transition:opacity .15s ease}
+.cmdb-pie-svg path:hover{opacity:.78}
+.cmdb-pie-legend{display:grid;max-height:222px;gap:7px;overflow:auto;padding-right:3px}
+.cmdb-pie-legend-item{display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:center;gap:8px;color:#587486;text-decoration:none;font-size:10px}
+.cmdb-pie-legend-item:hover{color:#247c90}
+.cmdb-pie-legend-item i{width:8px;height:8px;border-radius:50%}
+.cmdb-pie-legend-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmdb-pie-legend-item strong{color:#365a70;font-size:10px}
+.cmdb-line-chart-wrap,.cmdb-combo-chart-wrap{width:100%;overflow:hidden}
+.cmdb-line-svg,.cmdb-combo-svg{display:block;width:100%;height:auto;overflow:visible}
+.cmdb-chart-gridline{stroke:#eaf0f3;stroke-width:1}
+.cmdb-chart-axis-label,.cmdb-chart-category-label{fill:#8094a0;font-family:inherit;font-size:10px}
+.cmdb-chart-category-label{font-size:9px}
+.cmdb-line-path,.cmdb-combo-line{fill:none;stroke:#318fa4;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.cmdb-line-point{fill:#fff;stroke:#318fa4;stroke-width:2.5}
+.cmdb-line-point:hover{fill:#dff4f1}
+.cmdb-chart-legend{display:flex;align-items:center;gap:17px;margin:-2px 0 2px 38px;color:#718797;font-size:9px}
+.cmdb-chart-legend>span{display:inline-flex;align-items:center;gap:6px}
+.cmdb-legend-bar{width:9px;height:9px;border-radius:2px;background:#48a2a9}
+.cmdb-legend-line{width:15px;height:0;border-top:2px solid #347cae;position:relative}
+.cmdb-legend-line::after{position:absolute;top:-4px;left:6px;width:5px;height:5px;border-radius:50%;background:#347cae;content:""}
+.cmdb-combo-bar{fill:#48a2a9;opacity:.82;transition:opacity .15s ease}
+.cmdb-combo-bar:hover{opacity:1}
+.cmdb-combo-line{stroke:#347cae;stroke-width:2.5}
+.cmdb-combo-point{fill:#fff;stroke:#347cae;stroke-width:2.5}
+@media(max-width:900px){.cmdb-pie-content{grid-template-columns:minmax(130px,.8fr) minmax(135px,1.2fr);gap:8px}}
+@media(max-width:460px){.cmdb-pie-content{grid-template-columns:minmax(110px,.8fr) minmax(120px,1.2fr);gap:5px}.cmdb-pie-legend{gap:6px}.cmdb-chart-axis-label{font-size:9px}.cmdb-chart-category-label{font-size:8px}}

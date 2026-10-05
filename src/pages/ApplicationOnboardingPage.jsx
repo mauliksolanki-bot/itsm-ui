@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import { useAuth } from '../auth/AuthContext.jsx'
 import { notifyToast } from '../components/Toast.jsx'
 import './ServiceRequestPage.css'
 import './ApplicationOnboardingPage.css'
@@ -10,7 +11,6 @@ const STATUSES = ['Planned', 'Ordered', 'Installed', 'Operational', 'Maintenance
 const ENVIRONMENTS = ['Development', 'QA', 'UAT', 'Staging', 'Production', 'DR']
 const CRITICALITIES = ['Critical', 'High', 'Medium', 'Low']
 const LIFECYCLE_STATUSES = ['Planning', 'Procurement', 'Implementation', 'Production', 'Maintenance', 'Retirement', 'Retired', 'Disposed']
-const RELATIONSHIPS = ['Runs on', 'Depends on', 'Hosted on', 'Connects to', 'Contains', 'Contains Software', 'Uses', 'Part of', 'Backed up by', 'Monitored by', 'Communicates with']
 const TECHNOLOGIES = ['Java', 'Spring Boot', 'React', 'Angular', 'Next.js', 'Node.js', 'Python', '.NET']
 const VENDORS = ['Amazon Web Services', 'Cisco', 'Dell', 'Google Cloud', 'HPE', 'Microsoft', 'Oracle', 'Other']
 const DATA_CENTERS = ['North America Data Center', 'South America Data Center', 'Mumbai Data Center', 'Hyderabad Data Center', 'Global Data Center', 'Malaysia Data Center', 'Hong Kong Data Center', 'Dubai Data Center', 'China Data Center']
@@ -18,7 +18,7 @@ const REGIONS = ['North America', 'South America', 'Europe', 'Asia Pacific', 'Mi
 const CLOUD_PROVIDERS = ['AWS', 'Microsoft Azure', 'Google Cloud', 'Oracle Cloud']
 const TABS = ['Basic Information', 'Ownership', 'Location', 'Technical', 'Lifecycle', 'Relationships', 'Monitoring', 'Security', 'Financial', 'Notes']
 const INITIAL_BASE = { ciName: '', ciClass: '', ciType: '', status: '', environment: '', criticality: '', description: '', businessOwner: null, technicalOwner: null, supportGroup: null }
-const INITIAL_DETAILS = { relationships: [] }
+const INITIAL_DETAILS = { relationships: [], customAttributes: {} }
 
 async function responseBody(response) {
   const body = await response.json().catch(() => null)
@@ -46,6 +46,15 @@ function ToggleField({ label, value, onChange }) {
   return <label className="ci-toggle-field"><span>{label}</span><input type="checkbox" checked={Boolean(value)} onChange={(event) => onChange(event.target.checked)} /><span className="ci-toggle-track" aria-hidden="true" /></label>
 }
 
+function ConfiguredAttributeField({ attribute, value, error, onChange }) {
+  const options = (attribute.choices || []).map((choice) => ({ value: choice.value, label: choice.label }))
+  if (attribute.dataType === 'MULTI_SELECT') return <MultiSelectField label={`${attribute.label}${attribute.required ? ' *' : ''}`} values={Array.isArray(value) ? value : []} options={options.map((option) => option.value)} onChange={onChange} />
+  if (attribute.dataType === 'DROPDOWN') return <CIField label={attribute.label} type="select" options={options} value={value || ''} onChange={onChange} required={attribute.required} error={error} />
+  const type = ({ NUMBER: 'number', DECIMAL: 'number', DATE: 'date', DATETIME: 'datetime-local', EMAIL: 'email', URL: 'url', TEXT_AREA: 'textarea' })[attribute.dataType] || 'text'
+  if (attribute.dataType === 'BOOLEAN') return <CIField label={attribute.label} type="select" options={[{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }]} value={value ?? ''} onChange={onChange} required={attribute.required} error={error} />
+  return <CIField label={attribute.label} type={type} value={value ?? ''} onChange={onChange} required={attribute.required} error={error} hint={attribute.helpText || ''} wide={attribute.dataType === 'TEXT_AREA'} />
+}
+
 function UserSearchField({ label, kind = 'owners', required = false, value, onSelect, error }) {
   const [query, setQuery] = useState(value?.displayName || '')
   const [results, setResults] = useState([])
@@ -70,9 +79,8 @@ function UserSearchField({ label, kind = 'owners', required = false, value, onSe
   function changeQuery(next) { setQuery(next); setOpen(true); onSelect(null) }
   function choose(user) { onSelect(user); setQuery(user.displayName); setOpen(false); setResults([]); setSearchError('') }
 
-  return <div className="ci-field ci-search-field">
-    <label><span>{label}{required && <> <b>*</b></>}</span><div className="ci-search-control"><input type="search" role="combobox" aria-autocomplete="list" aria-expanded={open && query.trim().length >= 3} value={query} autoComplete="off" placeholder="Name, employee ID, or username" onChange={(event) => changeQuery(event.target.value)} onFocus={() => { if (query.trim().length >= 3) setOpen(true) }} onBlur={() => setTimeout(() => setOpen(false), 150)} aria-invalid={Boolean(error)} />{loading && <i className="ci-search-spinner" aria-label="Searching users" />}</div></label>
-    {open && query.trim().length >= 3 && <ul className="ci-search-results" role="listbox">{results.map((entry) => <li key={entry.userId}><button type="button" role="option" aria-selected="false" onMouseDown={(event) => event.preventDefault()} onClick={() => choose(entry)}><strong>{entry.displayName}</strong><small>{entry.employeeId || 'No employee ID'} · {entry.username}</small></button></li>)}{!loading && results.length === 0 && !searchError && <li className="ci-search-empty">No matching active users.</li>}</ul>}
+  return <div className={`ci-field ci-search-field${open && query.trim().length >= 3 ? ' ci-search-field-open' : ''}`}>
+    <label><span>{label}{required && <> <b>*</b></>}</span><div className="ci-search-control"><input type="search" role="combobox" aria-autocomplete="list" aria-expanded={open && query.trim().length >= 3} value={query} autoComplete="off" placeholder="Name, employee ID, or username" onChange={(event) => changeQuery(event.target.value)} onFocus={() => { if (query.trim().length >= 3) setOpen(true) }} onBlur={() => setTimeout(() => setOpen(false), 150)} aria-invalid={Boolean(error)} />{loading && <i className="ci-search-spinner" aria-label="Searching users" />}{open && query.trim().length >= 3 && <ul className="ci-search-results" role="listbox">{results.map((entry) => <li key={entry.userId}><button type="button" role="option" aria-selected="false" onMouseDown={(event) => event.preventDefault()} onClick={() => choose(entry)}><strong>{entry.displayName}</strong><small>{entry.employeeId || 'No employee ID'} · {entry.username}</small></button></li>)}{!loading && results.length === 0 && !searchError && <li className="ci-search-empty">No matching active users.</li>}</ul>}</div></label>
     {(error || searchError) && <small className="request-field-error" role="alert">{error || searchError}</small>}
   </div>
 }
@@ -123,19 +131,42 @@ function CISection({ title, description, children }) {
 
 export default function ApplicationOnboardingPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const editId = searchParams.get('edit')
-  const [activeTab, setActiveTab] = useState('Basic Information')
+  const isOwnerOnly = Boolean(editId && user?.roles?.includes('CI_OWNER') && !user?.roles?.includes('SUPER_ADMIN'))
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') === 'Relationships' ? 'Relationships' : 'Basic Information')
   const [base, setBase] = useState(INITIAL_BASE)
   const [details, setDetails] = useState(INITIAL_DETAILS)
   const [errors, setErrors] = useState({})
   const [catalogs, setCatalogs] = useState({ departments: [], locations: [], costCenters: [] })
+  const [configuredClasses, setConfiguredClasses] = useState(null)
+  const [customAttributes, setCustomAttributes] = useState([])
+  const [choiceCatalogs, setChoiceCatalogs] = useState([])
   const [pageError, setPageError] = useState('')
   const [created, setCreated] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [loadingRecord, setLoadingRecord] = useState(Boolean(editId))
   const [recordLoaded, setRecordLoaded] = useState(!editId)
   const [recordNumber, setRecordNumber] = useState('')
+  const [relationshipData, setRelationshipData] = useState({ outgoing: [], incoming: [] })
+  const [relationshipLoading, setRelationshipLoading] = useState(false)
+  const [relationshipError, setRelationshipError] = useState('')
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'Relationships') setActiveTab('Relationships')
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!editId || activeTab !== 'Relationships') return undefined
+    const controller = new AbortController()
+    setRelationshipLoading(true); setRelationshipError('')
+    fetch(`/api/cmdb/configuration-items/${editId}/relationships`, { credentials: 'include', signal: controller.signal })
+      .then(responseBody).then(setRelationshipData)
+      .catch((failure) => { if (failure.name !== 'AbortError') setRelationshipError(failure.message) })
+      .finally(() => { if (!controller.signal.aborted) setRelationshipLoading(false) })
+    return () => controller.abort()
+  }, [editId, activeTab])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -150,6 +181,29 @@ export default function ApplicationOnboardingPage() {
     }))
     return () => controller.abort()
   }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/cmdb/configuration/ci-classes', { credentials: 'include', signal: controller.signal })
+      .then(responseBody).then(setConfiguredClasses).catch((failure) => { if (failure.name !== 'AbortError') setConfiguredClasses(null) })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/cmdb/configuration/choice-lists', { credentials: 'include', signal: controller.signal })
+      .then(responseBody).then(setChoiceCatalogs).catch((failure) => { if (failure.name !== 'AbortError') setChoiceCatalogs([]) })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const classItem = configuredClasses.find((item) => item.name === base.ciClass)
+    if (!classItem) { setCustomAttributes([]); return undefined }
+    const controller = new AbortController()
+    fetch(`/api/cmdb/configuration/ci-classes/${classItem.id}/attributes`, { credentials: 'include', signal: controller.signal })
+      .then(responseBody).then(setCustomAttributes).catch((failure) => { if (failure.name !== 'AbortError') setCustomAttributes([]) })
+    return () => controller.abort()
+  }, [base.ciClass, configuredClasses])
 
   useEffect(() => {
     if (!editId) {
@@ -182,10 +236,6 @@ export default function ApplicationOnboardingPage() {
   function field(key, label, type = 'text', options = [], extra = {}) { return <CIField key={key} label={label} type={type} options={options} value={details[key] ?? ''} onChange={(value) => updateDetail(key, value)} {...extra} /> }
   function selectBase(key, label, options, errorKey = key) { return <CIField key={key} label={label} type="select" options={options} value={base[key]} onChange={(value) => updateBase(key, value)} required error={errors[errorKey]} /> }
 
-  function addRelationship() { updateDetail('relationships', [...(details.relationships || []), { relationshipType: 'Runs on', relatedCi: null, description: '' }]) }
-  function updateRelationship(index, key, value) { updateDetail('relationships', (details.relationships || []).map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item)) }
-  function removeRelationship(index) { updateDetail('relationships', (details.relationships || []).filter((_, itemIndex) => itemIndex !== index)) }
-
   async function submit(event) {
     event.preventDefault()
     const nextErrors = {}
@@ -197,9 +247,13 @@ export default function ApplicationOnboardingPage() {
     if (!base.criticality) nextErrors.criticality = 'Select criticality.'
     if (!base.businessOwner) nextErrors.businessOwner = 'Choose a business owner from the search results.'
     if (!base.supportGroup) nextErrors.supportGroup = 'Choose a support group from the search results.'
+    customAttributes.filter((attribute) => attribute.required).forEach((attribute) => {
+      const value = details.customAttributes?.[attribute.name]
+      if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) nextErrors[`custom_${attribute.name}`] = `${attribute.label} is required.`
+    })
     setErrors(nextErrors); setPageError('')
     if (Object.keys(nextErrors).length) {
-      setActiveTab(['ciName', 'ciClass', 'ciType', 'status', 'environment', 'criticality'].some((key) => nextErrors[key]) ? 'Basic Information' : 'Ownership')
+      setActiveTab(Object.keys(nextErrors).some((key) => key.startsWith('custom_')) ? 'Technical' : ['ciName', 'ciClass', 'ciType', 'status', 'environment', 'criticality'].some((key) => nextErrors[key]) ? 'Basic Information' : 'Ownership')
       return
     }
     setSubmitting(true)
@@ -222,6 +276,12 @@ export default function ApplicationOnboardingPage() {
   }
 
   const selectedClass = base.ciClass
+  const choiceValues = (code, fallback) => {
+    const list = choiceCatalogs.find((item) => item.code === code)
+    return list?.choices?.length ? list.choices.map((choice) => ({ value: choice.label, label: choice.label })) : fallback
+  }
+  const configuredClassNames = configuredClasses === null ? CI_CLASSES : configuredClasses.map((item) => item.name)
+  const ciClassChoices = base.ciClass && !configuredClassNames.includes(base.ciClass) ? [...configuredClassNames, base.ciClass] : configuredClassNames
   const locationOptions = catalogs.locations.map((item) => ({ value: item.id, label: item.name }))
   const departmentOptions = catalogs.departments.map((item) => ({ value: item.id, label: item.name }))
   const costCenterOptions = catalogs.costCenters.map((item) => ({ value: item.id, label: `${item.code} · ${item.name}` }))
@@ -232,20 +292,21 @@ export default function ApplicationOnboardingPage() {
     {created && <div className="request-alert request-success" role="status"><strong>Configuration item created</strong><span>{created.applicationNumber} · {created.applicationName}</span></div>}
     {pageError && <div className="request-alert" role="alert"><strong>We couldn’t save this configuration item.</strong><span>{pageError}</span></div>}
     <header className="change-form-heading application-onboarding-header">
-      <div className="change-form-heading-copy"><span className="change-form-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14m4-7h4m-4 4h4"/></svg></span><div><h2 id="application-onboarding-title">{editId ? 'Edit Configuration Item' : 'Create Configuration Item'}</h2><p>{editId ? 'Update configuration item details' : 'Register a new item in the configuration database'}</p></div></div>
-      <div className="change-form-heading-meta application-onboarding-toolbar-actions">{editId && <button type="button" className="application-onboarding-cancel" onClick={() => navigate('/cmdb/cidata')} disabled={submitting}>Cancel</button>}<button type="submit" form="application-onboarding-form" disabled={submitting || loadingRecord}>{submitting ? 'Saving…' : editId ? 'Save Changes' : 'Create CI'}</button></div>
+      <div className="change-form-heading-copy"><span className="change-form-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 9h16M8 5v14m4-7h4m-4 4h4"/></svg></span><div><h2 id="application-onboarding-title">{isOwnerOnly ? 'Configuration Item' : editId ? 'Edit Configuration Item' : 'Create Configuration Item'}</h2><p>{isOwnerOnly ? 'Details for a configuration item assigned to you.' : editId ? 'Update configuration item details' : 'Register a new item in the configuration database'}</p></div></div>
+      <div className="change-form-heading-meta application-onboarding-toolbar-actions">{editId && <button type="button" className="application-onboarding-cancel" onClick={() => navigate('/cmdb/cidata')} disabled={submitting}>{isOwnerOnly ? 'Back to CI Data' : 'Cancel'}</button>}{!isOwnerOnly && <button type="submit" form="application-onboarding-form" disabled={submitting || loadingRecord}>{submitting ? 'Saving…' : editId ? 'Save Changes' : 'Create CI'}</button>}</div>
     </header>
     {loadingRecord || !recordLoaded ? <div className="application-onboarding-loading" role={pageError ? 'alert' : 'status'}>{pageError || 'Loading configuration item…'}</div> : <form id="application-onboarding-form" className="service-request-form request-record-form ci-record-form" onSubmit={submit} noValidate>
       <nav className="ci-tabs" aria-label="Configuration item sections" role="tablist">{TABS.map((tab) => <button key={tab} type="button" role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? 'ci-tab ci-tab-active' : 'ci-tab'} onClick={() => setActiveTab(tab)}>{tab}</button>)}</nav>
+      <fieldset className={isOwnerOnly ? 'ci-readonly-fields' : undefined} disabled={isOwnerOnly}>
       <div className="ci-tab-content" role="tabpanel" aria-label={activeTab}>
         {activeTab === 'Basic Information' && <CISection title="Basic Information" description="Identify the item, class, operational state, and business importance.">
           <CIField label="CI Name" value={base.ciName} onChange={(value) => updateBase('ciName', value)} placeholder="e.g. PAY-APP-01" required error={errors.ciName} />
           <CIField label="CI ID" value={recordNumber || 'Generated automatically'} disabled hint="Assigned when this configuration item is created." />
-          {selectBase('ciClass', 'CI Class', CI_CLASSES)}
+          {selectBase('ciClass', 'CI Class', ciClassChoices)}
           {selectBase('ciType', 'CI Type', CI_TYPES)}
-          {selectBase('status', 'Status', STATUSES)}
-          {selectBase('environment', 'Environment', ENVIRONMENTS)}
-          {selectBase('criticality', 'Criticality', CRITICALITIES)}
+          {selectBase('status', 'Status', choiceValues('CI_STATUS', STATUSES))}
+          {selectBase('environment', 'Environment', choiceValues('ENVIRONMENT', ENVIRONMENTS))}
+          {selectBase('criticality', 'Criticality', choiceValues('CRITICALITY', CRITICALITIES))}
           <CIField label="Description" type="textarea" value={base.description} onChange={(value) => updateBase('description', value)} placeholder="Describe this configuration item and its purpose." wide rows={4} />
         </CISection>}
 
@@ -277,10 +338,10 @@ export default function ApplicationOnboardingPage() {
             <CIField label="Manufacturer" type="select" options={VENDORS} value={details.manufacturer || ''} onChange={(value) => updateDetail('manufacturer', value)} />{field('model', 'Model')}
           </CISection>
           {selectedClass === 'Server' && <CISection title="Server Hardware" description="Server fields are shown because CI Class is set to Server.">
-            {field('serverType', 'Server Type', 'select', ['Physical', 'Virtual', 'Cloud', 'Container Host'])}{field('operatingSystem', 'Operating System', 'select', ['Windows Server', 'Linux', 'Unix', 'macOS', 'Other'])}{field('osVersion', 'OS Version')}{field('cpu', 'CPU')}{field('cpuCores', 'CPU Cores', 'number')}{field('ram', 'RAM', 'number')}{field('ramUnit', 'RAM Unit', 'select', ['MB', 'GB', 'TB'])}{field('storageCapacity', 'Storage Capacity', 'number')}{field('storageUnit', 'Storage Unit', 'select', ['GB', 'TB', 'PB'])}{field('architecture', 'Architecture', 'select', ['x86', 'x64', 'ARM', 'Other'])}
+            {field('serverType', 'Server Type', 'select', choiceValues('SERVER_TYPE', ['Physical', 'Virtual', 'Cloud', 'Container Host']))}{field('operatingSystem', 'Operating System', 'select', choiceValues('OPERATING_SYSTEM', ['Windows Server', 'Linux', 'Unix', 'macOS', 'Other']))}{field('osVersion', 'OS Version')}{field('cpu', 'CPU')}{field('cpuCores', 'CPU Cores', 'number')}{field('ram', 'RAM', 'number')}{field('ramUnit', 'RAM Unit', 'select', ['MB', 'GB', 'TB'])}{field('storageCapacity', 'Storage Capacity', 'number')}{field('storageUnit', 'Storage Unit', 'select', ['GB', 'TB', 'PB'])}{field('architecture', 'Architecture', 'select', ['x86', 'x64', 'ARM', 'Other'])}
           </CISection>}
           {selectedClass === 'Application' && <CISection title="Application Details" description="Application-specific configuration and deployment details.">
-            {field('applicationName', 'Application Name')}{field('applicationVersion', 'Application Version')}{field('applicationType', 'Application Type', 'select', ['Web Application', 'Mobile Application', 'Desktop Application', 'API', 'Microservice', 'Batch Application', 'Enterprise Application'])}<MultiSelectField label="Technology" values={details.technology || []} onChange={(value) => updateDetail('technology', value)} options={TECHNOLOGIES} />{field('applicationUrl', 'Application URL', 'url')}{field('repositoryUrl', 'Repository URL', 'url')}{field('businessFunction', 'Business Function', 'select', ['Finance', 'Human Resources', 'Operations', 'Sales', 'Customer Service', 'Security', 'Other'])}{field('businessCriticality', 'Business Criticality', 'select', CRITICALITIES)}{field('deploymentType', 'Deployment Type', 'select', ['On-premises', 'Cloud', 'Hybrid', 'Containerized'])}
+            {field('applicationName', 'Application Name')}{field('applicationVersion', 'Application Version')}{field('applicationType', 'Application Type', 'select', choiceValues('APPLICATION_TYPE', ['Web Application', 'Mobile Application', 'Desktop Application', 'API', 'Microservice', 'Batch Application', 'Enterprise Application']))}<MultiSelectField label="Technology" values={details.technology || []} onChange={(value) => updateDetail('technology', value)} options={TECHNOLOGIES} />{field('applicationUrl', 'Application URL', 'url')}{field('repositoryUrl', 'Repository URL', 'url')}{field('businessFunction', 'Business Function', 'select', ['Finance', 'Human Resources', 'Operations', 'Sales', 'Customer Service', 'Security', 'Other'])}{field('businessCriticality', 'Business Criticality', 'select', choiceValues('CRITICALITY', CRITICALITIES))}{field('deploymentType', 'Deployment Type', 'select', ['On-premises', 'Cloud', 'Hybrid', 'Containerized'])}
           </CISection>}
           {selectedClass === 'Database' && <CISection title="Database Details" description="Database engine, host, and resilience settings.">
             {field('databaseType', 'Database Type', 'select', ['Oracle', 'MySQL', 'PostgreSQL', 'SQL Server', 'MongoDB', 'Redis', 'MariaDB'])}{field('databaseVersion', 'Database Version')}<CIReferenceSearch value={details.hostServer || null} onSelect={(value) => updateDetail('hostServer', value)} />{field('port', 'Port', 'number')}{field('databaseName', 'Database Name')}{field('instanceName', 'Instance Name')}{field('clusterName', 'Cluster Name')}{field('highAvailability', 'High Availability', 'select', ['Yes', 'No'])}{field('backupEnabled', 'Backup Enabled', 'select', ['Yes', 'No'])}{field('backupFrequency', 'Backup Frequency', 'select', ['Continuous', 'Hourly', 'Daily', 'Weekly', 'Monthly'])}
@@ -291,21 +352,29 @@ export default function ApplicationOnboardingPage() {
           {selectedClass === 'Cloud Resource' && <CISection title="Cloud Resource Details" description="Resource identifiers and cloud network configuration.">
             <CIField label="Cloud Provider" type="select" options={CLOUD_PROVIDERS} value={details.cloudProvider || ''} onChange={(value) => updateDetail('cloudProvider', value)} />{field('accountId', 'Account ID')}{field('resourceId', 'Resource ID')}{field('instanceType', 'Instance Type')}
           </CISection>}
+          {customAttributes.length > 0 && <CISection title={`${selectedClass} Attributes`} description="Additional fields configured by your CMDB administrator.">
+            {customAttributes.map((attribute) => <ConfiguredAttributeField key={attribute.id} attribute={attribute} value={details.customAttributes?.[attribute.name]} error={errors[`custom_${attribute.name}`]} onChange={(value) => { updateDetail('customAttributes', { ...(details.customAttributes || {}), [attribute.name]: value }); setErrors((current) => ({ ...current, [`custom_${attribute.name}`]: '' })) }} />)}
+          </CISection>}
         </>}
 
         {activeTab === 'Lifecycle' && <CISection title="Lifecycle Information" description="Track acquisition, support, and retirement dates.">
-          {field('installDate', 'Install Date', 'date')}{field('purchaseDate', 'Purchase Date', 'date')}{field('warrantyStart', 'Warranty Start', 'date')}{field('warrantyEnd', 'Warranty End', 'date')}{field('expectedRetirementDate', 'Expected Retirement Date', 'date')}{field('actualRetirementDate', 'Actual Retirement Date', 'date')}{field('lifecycleStatus', 'Lifecycle Status', 'select', LIFECYCLE_STATUSES)}{field('maintenanceStatus', 'Maintenance Status', 'select', ['In Maintenance', 'Scheduled', 'Due', 'Not Required'])}
+          {field('installDate', 'Install Date', 'date')}{field('purchaseDate', 'Purchase Date', 'date')}{field('warrantyStart', 'Warranty Start', 'date')}{field('warrantyEnd', 'Warranty End', 'date')}{field('expectedRetirementDate', 'Expected Retirement Date', 'date')}{field('actualRetirementDate', 'Actual Retirement Date', 'date')}{field('lifecycleStatus', 'Lifecycle Status', 'select', choiceValues('LIFECYCLE_STATUS', LIFECYCLE_STATUSES))}{field('maintenanceStatus', 'Maintenance Status', 'select', ['In Maintenance', 'Scheduled', 'Due', 'Not Required'])}
         </CISection>}
 
-        {activeTab === 'Relationships' && <CISection title="Relationships" description="Connect this CI to other configuration items. Related items are selected from the CI search.">
-          <div className="ci-relationship-actions"><span>Related CIs</span><button type="button" onClick={addRelationship}>＋ Add relationship</button></div>
-          {(details.relationships || []).length === 0 && <div className="ci-empty-relationships">No relationships added yet.</div>}
-          {(details.relationships || []).map((relationship, index) => <div className="ci-relationship-row" key={index}>
-            <CIField label="Relationship Type" type="select" options={RELATIONSHIPS} value={relationship.relationshipType} onChange={(value) => updateRelationship(index, 'relationshipType', value)} />
-            <CIReferenceSearch value={relationship.relatedCi} onSelect={(value) => updateRelationship(index, 'relatedCi', value)} />
-            <CIField label="Description" value={relationship.description} onChange={(value) => updateRelationship(index, 'description', value)} />
-            <button type="button" className="ci-remove-relationship" onClick={() => removeRelationship(index)} aria-label="Remove relationship">×</button>
-          </div>)}
+        {activeTab === 'Relationships' && <CISection title="CI Relationships" description="Review this configuration item’s outgoing dependencies and incoming relationships.">
+          {!editId ? <div className="ci-empty-relationships">Create the configuration item before connecting it to other CIs.</div> : <div className="ci-normalized-relationships">
+            <div className="ci-relationship-actions"><span>{(relationshipData.outgoing || []).length + (relationshipData.incoming || []).length} relationships</span><button type="button" onClick={() => navigate(`/cmdb/relationships/new?sourceCi=${editId}`)} disabled={isOwnerOnly}>＋ Add relationship</button></div>
+            {relationshipLoading && <div className="ci-empty-relationships">Loading CI relationships…</div>}
+            {relationshipError && <div className="ci-empty-relationships" role="alert">{relationshipError}</div>}
+            {!relationshipLoading && !relationshipError && ['outgoing', 'incoming'].map((direction) => <section className={`ci-relationship-direction ci-relationship-${direction}`} key={direction}>
+              <h3><span>{direction === 'outgoing' ? 'Outgoing relationships' : 'Incoming relationships'}</span><b>{(relationshipData[direction] || []).length}</b></h3>
+              {(relationshipData[direction] || []).length === 0 ? <div className="ci-empty-relationships">No {direction} relationships.</div> : <div className="ci-relationship-cards">{relationshipData[direction].map((relation) => <article className="ci-relationship-card" key={`${direction}-${relation.id}`}>
+                <span className="ci-relationship-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="7" r="2.5"/><circle cx="18" cy="17" r="2.5"/><path d="m8.3 11 7.3-3M8.3 13l7.3 3"/></svg></span>
+                <div className="ci-relationship-card-main"><div className="ci-relationship-card-heading"><span className="ci-relationship-direction-label">{relation.relationship}</span><span className={`ci-relationship-status ci-relationship-status-${(relation.status || '').toLowerCase()}`}>{relation.status === 'ACTIVE' ? 'Active' : 'Inactive'}</span></div><strong>{relation.relatedCi.name}</strong><div className="ci-relationship-ci-meta"><span>{relation.relatedCi.number}</span><i/><span>{relation.relatedCi.ciClass}</span><i/><span>{relation.relatedCi.environment}</span><i/><span>{relation.relatedCi.status}</span></div>{relation.description && <p>{relation.description}</p>}</div>
+                <a className="ci-relationship-view-link" href={`/cmdb/newci?edit=${relation.relatedCi.id}&tab=Relationships`} aria-label={`View ${relation.relatedCi.name}`}>View CI <span aria-hidden="true">↗</span></a>
+              </article>)}</div>}
+            </section>)}
+          </div>}
         </CISection>}
 
         {activeTab === 'Monitoring' && <CISection title="Monitoring & Support" description="Capture monitoring and support coverage for this CI.">
@@ -324,7 +393,8 @@ export default function ApplicationOnboardingPage() {
           {field('additionalNotes', 'Additional Notes', 'textarea', [], { wide: true, rows: 5 })}{field('technicalNotes', 'Technical Notes', 'textarea', [], { wide: true, rows: 5 })}{field('operationalNotes', 'Operational Notes', 'textarea', [], { wide: true, rows: 5 })}
         </CISection>}
       </div>
-      <footer className="ci-form-footer"><span><b>*</b> Required fields</span><span>CI ID is assigned automatically.</span><div>{editId && <button type="button" className="ci-footer-secondary" onClick={() => navigate('/cmdb/cidata')} disabled={submitting}>Cancel</button>}<button type="submit" disabled={submitting || loadingRecord}>{submitting ? 'Saving…' : editId ? 'Save Changes' : 'Create CI'}</button></div></footer>
+      </fieldset>
+      <footer className="ci-form-footer"><span>{isOwnerOnly ? 'Read-only view' : <><b>*</b> Required fields</>}</span><span>CI ID is assigned automatically.</span><div>{editId && <button type="button" className="ci-footer-secondary" onClick={() => navigate('/cmdb/cidata')} disabled={submitting}>{isOwnerOnly ? 'Back to CI Data' : 'Cancel'}</button>}{!isOwnerOnly && <button type="submit" disabled={submitting || loadingRecord}>{submitting ? 'Saving…' : editId ? 'Save Changes' : 'Create CI'}</button>}</div></footer>
     </form>}
   </section>
 }
